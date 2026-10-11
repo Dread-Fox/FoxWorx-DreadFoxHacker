@@ -1,0 +1,45 @@
+FoxWorx LLC Proprietary Software License
+Version 1.0 — October 2026
+
+Copyright (c) 2026 FoxWorx LLC. All rights reserved.
+
+1. Covered Software. This license applies only to original code, documentation,
+   graphics, and other materials in FoxWorx DreadFoxHacker for which FoxWorx LLC
+   owns the copyright or otherwise has authority to set these terms ("Software").
+
+2. Limited Company Authorization. FoxWorx LLC may install, run, reproduce,
+   modify, and maintain the Software for its internal business purposes.
+   Individuals may do those acts solely while they are employees or contractors
+   expressly authorized by FoxWorx LLC, for the benefit of FoxWorx LLC, and
+   within the scope of that authorization. The authorization terminates when
+   withdrawn or the person's relevant company engagement ends.
+
+3. No Public License. Except for the limited authorization in section 2 and
+   permissions that cannot be excluded under applicable law or the hosting
+   platform's terms, no license is granted to any other person or entity.
+   In particular, public visibility of this repository does not authorize
+   downloading for use, installing, executing, copying for other purposes,
+   modifying, adapting, redistributing, sublicensing, selling, hosting as a
+   service, or incorporating the Software into other products. All such uses
+   require FoxWorx LLC's prior written permission.
+
+4. No Trademark License. No right to use the FoxWorx, DreadFoxHacker or related
+   names, logos, or trademarks is granted by this license.
+
+5. Third-Party Materials. This license does not replace, restrict, or claim
+   ownership of any third-party component. Third-party dependencies and
+   vendored assets remain subject to their respective licenses, copyright
+   notices, and attribution requirements, including the notices in
+   static/vendor/ and docs/DEPENDENCIES.md. Nothing in this license modifies
+   rights received under an earlier valid license grant.
+
+6. No Warranty. TO THE EXTENT PERMITTED BY APPLICABLE LAW, THE SOFTWARE IS
+   PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+   INCLUDING WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+   OR NONINFRINGEMENT. FOXWORX LLC DISCLAIMS LIABILITY TO THE EXTENT
+   PERMITTED BY APPLICABLE LAW.
+
+7. Permission Requests. For any use outside section 2, obtain prior express
+   written permission from FoxWorx LLC.
+
+ALL RIGHTS NOT EXPRESSLY GRANTED ARE RESERVED.

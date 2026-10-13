@@ -1,0 +1,506 @@
+{
+  "nmap": {
+    "category": "Discovery",
+    "mode": "cli",
+    "package": "nmap",
+    "description": "Network and service discovery",
+    "note": "TCP connect works unprivileged; raw SYN/OS detection need additional privileges."
+  },
+  "curl": {
+    "category": "Web",
+    "mode": "cli",
+    "package": "curl",
+    "description": "HTTP client and request inspection",
+    "note": "Guided headers disable redirects and user curl configuration."
+  },
+  "dig": {
+    "category": "DNS",
+    "mode": "cli",
+    "package": "bind9-dnsutils",
+    "description": "DNS records and resolver queries",
+    "note": "DNS queries use configured resolvers."
+  },
+  "whois": {
+    "category": "DNS",
+    "mode": "cli",
+    "package": "whois",
+    "description": "Registration records",
+    "note": "May contact registry referral servers."
+  },
+  "openssl": {
+    "category": "TLS",
+    "mode": "cli",
+    "package": "openssl",
+    "description": "Certificates and cryptographic utilities",
+    "note": "Some subcommands are interactive; use the terminal."
+  },
+  "httpx-toolkit": {
+    "category": "Web",
+    "mode": "cli",
+    "package": "httpx-toolkit",
+    "description": "ProjectDiscovery HTTP probing",
+    "note": "Preferred Kali executable name; confirm installed version and program rate rules."
+  },
+  "httpx": {
+    "category": "Web",
+    "mode": "cli",
+    "package": "",
+    "description": "Ambiguous HTTPx executable",
+    "note": "May be Python HTTPX, not ProjectDiscovery. Verify identity; prefer httpx-toolkit on Kali."
+  },
+  "nuclei": {
+    "category": "Web",
+    "mode": "cli",
+    "package": "nuclei",
+    "description": "Template-driven assessment",
+    "note": "Templates, version, scope, rate and program policy need review; no blanket safe template set."
+  },
+  "nikto": {
+    "category": "Web",
+    "mode": "cli",
+    "package": "nikto",
+    "description": "Web server assessment",
+    "note": "Active checks may be prohibited by individual programs."
+  },
+  "ffuf": {
+    "category": "Web",
+    "mode": "cli",
+    "package": "ffuf",
+    "description": "Content discovery",
+    "note": "Needs a wordlist, a small traffic budget and explicit program permission."
+  },
+  "gobuster": {
+    "category": "Web",
+    "mode": "cli",
+    "package": "gobuster",
+    "description": "Content and DNS discovery",
+    "note": "Wordlists and request rate must be selected deliberately."
+  },
+  "feroxbuster": {
+    "category": "Web",
+    "mode": "cli",
+    "package": "feroxbuster",
+    "description": "Recursive content discovery",
+    "note": "Recursive requests can expand traffic; review scope and limits."
+  },
+  "dirsearch": {
+    "category": "Web",
+    "mode": "cli",
+    "package": "dirsearch",
+    "description": "Web path discovery",
+    "note": "Review paths, wordlists and request limits."
+  },
+  "whatweb": {
+    "category": "Web",
+    "mode": "cli",
+    "package": "whatweb",
+    "description": "Web technology identification",
+    "note": "Check probe aggression and program rules."
+  },
+  "wafw00f": {
+    "category": "Web",
+    "mode": "cli",
+    "package": "wafw00f",
+    "description": "Web application firewall identification",
+    "note": "Makes network requests."
+  },
+  "sqlmap": {
+    "category": "Web",
+    "mode": "cli",
+    "package": "sqlmap",
+    "description": "SQL injection validation",
+    "note": "Potentially intrusive; manual scope and method review required."
+  },
+  "wpscan": {
+    "category": "Web",
+    "mode": "cli",
+    "package": "wpscan",
+    "description": "WordPress assessment",
+    "note": "Some data/features require a separate API token."
+  },
+  "arjun": {
+    "category": "Web",
+    "mode": "cli",
+    "package": "arjun",
+    "description": "HTTP parameter discovery",
+    "note": "Rate and request volume require review."
+  },
+  "katana": {
+    "category": "Web",
+    "mode": "cli",
+    "package": "katana",
+    "description": "Web crawling",
+    "note": "Headless mode needs a compatible browser; crawling can leave intended scope."
+  },
+  "subfinder": {
+    "category": "DNS",
+    "mode": "cli",
+    "package": "subfinder",
+    "description": "Subdomain enumeration",
+    "note": "Some providers need separate API keys; discovered assets are not automatically in scope."
+  },
+  "amass": {
+    "category": "DNS",
+    "mode": "cli",
+    "package": "amass",
+    "description": "Attack-surface enumeration",
+    "note": "Uses data sources and can be resource-intensive; review mode and permissions."
+  },
+  "dnsrecon": {
+    "category": "DNS",
+    "mode": "cli",
+    "package": "dnsrecon",
+    "description": "DNS reconnaissance",
+    "note": "Some modes are active enumeration."
+  },
+  "dnsenum": {
+    "category": "DNS",
+    "mode": "cli",
+    "package": "dnsenum",
+    "description": "DNS enumeration",
+    "note": "Review query volume and third-party queries."
+  },
+  "dnsx": {
+    "category": "DNS",
+    "mode": "cli",
+    "package": "dnsx",
+    "description": "DNS probing",
+    "note": "Verify ARM64 package availability and query rate."
+  },
+  "fierce": {
+    "category": "DNS",
+    "mode": "cli",
+    "package": "fierce",
+    "description": "DNS discovery",
+    "note": "Do not treat newly found infrastructure as authorized."
+  },
+  "theHarvester": {
+    "category": "OSINT",
+    "mode": "cli",
+    "package": "theharvester",
+    "description": "Public-source discovery",
+    "note": "Provider keys and provider restrictions may apply."
+  },
+  "recon-ng": {
+    "category": "OSINT",
+    "mode": "interactive",
+    "package": "recon-ng",
+    "description": "Reconnaissance console",
+    "note": "Interactive workspace; modules/API keys configured separately."
+  },
+  "sherlock": {
+    "category": "OSINT",
+    "mode": "cli",
+    "package": "sherlock",
+    "description": "Username research",
+    "note": "Use only in permitted investigations."
+  },
+  "tshark": {
+    "category": "Traffic",
+    "mode": "cli",
+    "package": "tshark",
+    "description": "Packet capture and analysis",
+    "note": "Offline PCAP analysis works unprivileged; live capture needs reviewed capture privileges."
+  },
+  "tcpdump": {
+    "category": "Traffic",
+    "mode": "cli",
+    "package": "tcpdump",
+    "description": "Packet capture",
+    "note": "Live capture needs permissions and an appropriate interface."
+  },
+  "wireshark": {
+    "category": "Traffic",
+    "mode": "gui",
+    "package": "wireshark",
+    "description": "Graphical packet analysis",
+    "note": "Requires a desktop; use tshark for terminal-only work."
+  },
+  "burpsuite": {
+    "category": "Web",
+    "mode": "gui",
+    "package": "burpsuite",
+    "description": "Web interception workbench",
+    "note": "Needs a desktop/browser and possibly a license; Java/browser performance on Pi varies."
+  },
+  "zaproxy": {
+    "category": "Web",
+    "mode": "gui",
+    "package": "zaproxy",
+    "description": "Graphical web assessment",
+    "note": "GUI needs desktop; daemon modes can be invoked manually from the terminal."
+  },
+  "firefox-esr": {
+    "category": "Web",
+    "mode": "gui",
+    "package": "firefox-esr",
+    "description": "Browser testing",
+    "note": "Not displayed inside this terminal app; use local desktop or separately secured remote desktop."
+  },
+  "chromium": {
+    "category": "Web",
+    "mode": "gui",
+    "package": "chromium",
+    "description": "Browser and headless tooling",
+    "note": "ARM package support and sandbox requirements must be checked on the Pi."
+  },
+  "msfconsole": {
+    "category": "Frameworks",
+    "mode": "interactive",
+    "package": "metasploit-framework",
+    "description": "Metasploit console",
+    "note": "Interactive framework; database services and module dependencies are separate."
+  },
+  "msfdb": {
+    "category": "Frameworks",
+    "mode": "interactive",
+    "package": "metasploit-framework",
+    "description": "Metasploit database management",
+    "note": "Database setup is administrative, not automatic."
+  },
+  "gdb": {
+    "category": "Reversing",
+    "mode": "interactive",
+    "package": "gdb",
+    "description": "Native debugger",
+    "note": "Debugging/ptrace privileges depend on OS policy."
+  },
+  "radare2": {
+    "category": "Reversing",
+    "mode": "interactive",
+    "package": "radare2",
+    "description": "Reverse-engineering console",
+    "note": "Architecture and target format matter."
+  },
+  "rizin": {
+    "category": "Reversing",
+    "mode": "interactive",
+    "package": "rizin",
+    "description": "Reverse-engineering console",
+    "note": "Use a terminal session for interactive work."
+  },
+  "ghidra": {
+    "category": "Reversing",
+    "mode": "gui",
+    "package": "ghidra",
+    "description": "Graphical reverse engineering",
+    "note": "Requires desktop and a compatible Java runtime; substantial RAM."
+  },
+  "binwalk": {
+    "category": "Forensics",
+    "mode": "cli",
+    "package": "binwalk",
+    "description": "Firmware inspection",
+    "note": "External extraction helpers may need separate packages."
+  },
+  "exiftool": {
+    "category": "Forensics",
+    "mode": "cli",
+    "package": "libimage-exiftool-perl",
+    "description": "File metadata",
+    "note": "Works on local workspace files."
+  },
+  "file": {
+    "category": "Forensics",
+    "mode": "cli",
+    "package": "file",
+    "description": "File type identification",
+    "note": "Works on local workspace files."
+  },
+  "strings": {
+    "category": "Forensics",
+    "mode": "cli",
+    "package": "binutils",
+    "description": "Readable strings from binaries",
+    "note": "Works on local workspace files."
+  },
+  "foremost": {
+    "category": "Forensics",
+    "mode": "cli",
+    "package": "foremost",
+    "description": "File carving",
+    "note": "Evidence images and recovered files can use substantial disk space."
+  },
+  "vol": {
+    "category": "Forensics",
+    "mode": "cli",
+    "package": "volatility3",
+    "description": "Memory forensics",
+    "note": "Symbols, images and package version are separate requirements."
+  },
+  "john": {
+    "category": "Passwords",
+    "mode": "cli",
+    "package": "john",
+    "description": "Authorized password auditing",
+    "note": "Compute-heavy; use only approved offline artifacts."
+  },
+  "hashcat": {
+    "category": "Passwords",
+    "mode": "cli",
+    "package": "hashcat",
+    "description": "Authorized password auditing",
+    "note": "Pi has no general desktop GPU cracking capability; backend support must be checked."
+  },
+  "hydra": {
+    "category": "Passwords",
+    "mode": "cli",
+    "package": "hydra",
+    "description": "Authentication assessment",
+    "note": "Online guessing is often prohibited; obtain explicit permission and lockout limits."
+  },
+  "aircrack-ng": {
+    "category": "Wireless",
+    "mode": "cli",
+    "package": "aircrack-ng",
+    "description": "Wireless assessment toolkit",
+    "note": "Requires authorized local radio targets and suitable capture files/hardware."
+  },
+  "airmon-ng": {
+    "category": "Wireless",
+    "mode": "cli",
+    "package": "aircrack-ng",
+    "description": "Wireless monitor interface management",
+    "note": "Needs compatible adapter/drivers and privileges; may disrupt networking."
+  },
+  "airodump-ng": {
+    "category": "Wireless",
+    "mode": "interactive",
+    "package": "aircrack-ng",
+    "description": "Wireless capture view",
+    "note": "Local radio hardware and monitor-mode privileges required."
+  },
+  "bettercap": {
+    "category": "Traffic",
+    "mode": "interactive",
+    "package": "bettercap",
+    "description": "Interactive network assessment",
+    "note": "Privileges and network position required; not a HackerOne-wide permission."
+  },
+  "responder": {
+    "category": "Network",
+    "mode": "interactive",
+    "package": "responder",
+    "description": "Protocol assessment",
+    "note": "Needs a suitable authorized network and privileges; not internet bug-bounty default."
+  },
+  "netexec": {
+    "category": "Network",
+    "mode": "cli",
+    "package": "netexec",
+    "description": "Network and directory assessment",
+    "note": "Protocol dependencies, credentials and explicit scope required."
+  },
+  "smbclient": {
+    "category": "Network",
+    "mode": "interactive",
+    "package": "smbclient",
+    "description": "SMB client",
+    "note": "Some modes are interactive; use a terminal."
+  },
+  "smbmap": {
+    "category": "Network",
+    "mode": "cli",
+    "package": "smbmap",
+    "description": "SMB share review",
+    "note": "Authorized credentials/scope required."
+  },
+  "enum4linux-ng": {
+    "category": "Network",
+    "mode": "cli",
+    "package": "enum4linux-ng",
+    "description": "SMB information gathering",
+    "note": "Can generate many network requests."
+  },
+  "ldapsearch": {
+    "category": "Network",
+    "mode": "cli",
+    "package": "ldap-utils",
+    "description": "Directory queries",
+    "note": "Credentials, TLS trust and directory scope require configuration."
+  },
+  "ssh": {
+    "category": "Utilities",
+    "mode": "interactive",
+    "package": "openssh-client",
+    "description": "Secure Shell client",
+    "note": "Outbound SSH is not the Cloudflare web tunnel; review destination separately."
+  },
+  "tmux": {
+    "category": "Utilities",
+    "mode": "interactive",
+    "package": "tmux",
+    "description": "Persistent terminal multiplexer",
+    "note": "Required for workbench reconnectable terminal sessions."
+  },
+  "python3": {
+    "category": "Utilities",
+    "mode": "cli",
+    "package": "python3",
+    "description": "Python interpreter",
+    "note": "Advanced jobs execute with the service user privileges; not sandboxed."
+  },
+  "bash": {
+    "category": "Utilities",
+    "mode": "interactive",
+    "package": "bash",
+    "description": "Interactive shell",
+    "note": "Full native shell access; guided checks do not constrain it."
+  },
+  "zsh": {
+    "category": "Utilities",
+    "mode": "interactive",
+    "package": "zsh",
+    "description": "Interactive shell",
+    "note": "Full native shell access; guided checks do not constrain it."
+  },
+  "jq": {
+    "category": "Utilities",
+    "mode": "cli",
+    "package": "jq",
+    "description": "JSON processing",
+    "note": "Useful for structured tool output."
+  },
+  "git": {
+    "category": "Utilities",
+    "mode": "cli",
+    "package": "git",
+    "description": "Source control",
+    "note": "Clone only code you trust; repositories can contain executable hooks/scripts."
+  },
+  "htop": {
+    "category": "Utilities",
+    "mode": "interactive",
+    "package": "htop",
+    "description": "Process monitor",
+    "note": "Runs in a real terminal, not a non-interactive job."
+  },
+  "btop": {
+    "category": "Utilities",
+    "mode": "interactive",
+    "package": "btop",
+    "description": "Resource monitor",
+    "note": "Runs in a real terminal."
+  },
+  "codex": {
+    "category": "AI agents",
+    "mode": "interactive",
+    "package": "",
+    "description": "Optional terminal AI agent",
+    "note": "Install/authenticate separately; external agent has its own permissions and billing."
+  },
+  "claude": {
+    "category": "AI agents",
+    "mode": "interactive",
+    "package": "",
+    "description": "Optional terminal AI agent",
+    "note": "Install/authenticate separately; not integrated into workbench approval controls."
+  },
+  "aider": {
+    "category": "AI agents",
+    "mode": "interactive",
+    "package": "",
+    "description": "Optional terminal AI coding agent",
+    "note": "Separate setup, model credentials and behavior apply."
+  }
+}

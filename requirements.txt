@@ -1,0 +1,9 @@
+# Direct dependencies pinned to the environment used for the release tests.
+# Kali ARM64 installation/wheel resolution is a target-side acceptance check.
+fastapi==0.128.2
+uvicorn==0.48.0
+pydantic==2.13.4
+httpx==0.28.1
+PyJWT[crypto]==2.13.0
+python-dotenv==1.2.2
+websockets==16.0

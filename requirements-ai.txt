@@ -1,0 +1,3 @@
+# Optional LiteLLM gateway runtime (installed by default; omit with --without-ai).
+# Cloud providers and local Ollama/LM Studio/vLLM/OpenAI-compatible APIs.
+litellm==1.104.0

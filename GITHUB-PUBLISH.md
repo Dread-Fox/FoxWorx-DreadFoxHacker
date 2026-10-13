@@ -14,15 +14,15 @@ Authenticate your own GitHub account using `gh auth login` or Git Credential Man
 
 ```bash
 git clone https://github.com/Dread-Fox/FoxWorx-DreadFoxHacker.git
-# Extract FoxWorx-DreadFoxHacker-github-ready.zip in the same parent folder.
-# It creates a folder named FoxWorx-DreadFoxHacker-release.
-cp -a FoxWorx-DreadFoxHacker-release/. FoxWorx-DreadFoxHacker/
+# Extract FoxWorx-DreadFoxHacker-v3.3.3.zip in the same parent folder.
+# It creates a folder named FoxWorx-DreadFoxHacker-v3.3.3.
+cp -a FoxWorx-DreadFoxHacker-v3.3.3/. FoxWorx-DreadFoxHacker/
 cd FoxWorx-DreadFoxHacker
 git status --short
 # Double-check that no runtime secrets or private assessment files are staged.
 git add -A
 git diff --cached --stat
-git commit -m "Release FOXWORX Kali Workbench v3.0.0 (proprietary)"
+git commit -m "Release FOXWORX Kali Workbench v3.3.3 (proprietary)"
 git push origin main
 ```
 
@@ -37,3 +37,5 @@ Check these URLs:
 - https://github.com/Dread-Fox/FoxWorx-DreadFoxHacker/blob/main/docs/OPERATOR-GUIDE.md
 
 To install, see `docs/INSTALL.md`. Use the administrator policies in `policy/` only after review; they control Rabbit Hole execution.
+
+**v3.3:** Do not commit any bot token, client evidence or team channel history. Discord integration requires private host configuration; see docs/DISCORD-TEAM.md.

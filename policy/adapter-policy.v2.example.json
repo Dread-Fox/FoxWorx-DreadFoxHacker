@@ -1,0 +1,389 @@
+{
+  "schema": 2,
+  "enabled_profiles": [
+    "tcp-connect",
+    "tcp-web",
+    "http-headers",
+    "http-options",
+    "http-status",
+    "http-get-limited",
+    "dns-a",
+    "dns-aaaa",
+    "dns-mx",
+    "dns-txt",
+    "dns-caa",
+    "dns-ns",
+    "dns-soa",
+    "dns-cname",
+    "whois",
+    "tls-certificate",
+    "web-fingerprint"
+  ],
+  "max_steps": 8,
+  "max_minutes": 15,
+  "registered_adapters": [
+    {
+      "id": "curl-metadata-tunable",
+      "tool": "curl",
+      "label": "Configurable read-only HTTP header check",
+      "hint": "Model chooses only approved timeout and HTTP protocol version; no redirects, GET body or custom URL.",
+      "target_kind": "url",
+      "risk": "recon",
+      "mode": "autonomous",
+      "argv": [
+        "--silent",
+        "--show-error",
+        "--head",
+        "--max-time",
+        "{param:timeout}",
+        "{param:protocol}",
+        "{target}"
+      ],
+      "parameters": {
+        "timeout": {
+          "type": "integer",
+          "min": 5,
+          "max": 20,
+          "default": 10
+        },
+        "protocol": {
+          "type": "enum",
+          "choices": [
+            "--http1.1",
+            "--http2"
+          ],
+          "default": "--http1.1"
+        }
+      }
+    },
+    {
+      "id": "nuclei-review",
+      "tool": "nuclei",
+      "label": "Nuclei bounded template audit",
+      "hint": "Nuclei bounded template audit; validate installed version, target authorization and request limits.",
+      "target_kind": "url",
+      "risk": "intrusive",
+      "mode": "review",
+      "argv": [
+        "-u",
+        "{target}",
+        "-severity",
+        "info,low",
+        "-c",
+        "1",
+        "-rl",
+        "1",
+        "-timeout",
+        "5",
+        "-retries",
+        "0",
+        "-no-interactsh",
+        "-silent"
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "nikto-review",
+      "tool": "nikto",
+      "label": "Nikto web assessment",
+      "hint": "Nikto web assessment; validate installed version, target authorization and request limits.",
+      "target_kind": "url",
+      "risk": "intrusive",
+      "mode": "review",
+      "argv": [
+        "-h",
+        "{target}",
+        "-timeout",
+        "10s",
+        "-nointeractive"
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "ffuf-small",
+      "tool": "ffuf",
+      "label": "FFUF low-rate directory discovery",
+      "hint": "Requires an explicitly authorized URL containing FUZZ (e.g. https://lab.example/FUZZ) and the root-owned /usr/share/wordlists/dirb/common.txt wordlist. Verify scope covers the generated paths.",
+      "target_kind": "url",
+      "risk": "active",
+      "mode": "autonomous",
+      "argv": [
+        "-u",
+        "{target}",
+        "-w",
+        "/usr/share/wordlists/dirb/common.txt",
+        "-t",
+        "1",
+        "-rate",
+        "1",
+        "-maxtime",
+        "30",
+        "-noninteractive",
+        "-s"
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "gobuster-small",
+      "tool": "gobuster",
+      "label": "Gobuster low-thread discovery",
+      "hint": "Gobuster low-thread discovery; validate installed version, target authorization and request limits.",
+      "target_kind": "url",
+      "risk": "active",
+      "mode": "autonomous",
+      "argv": [
+        "dir",
+        "-u",
+        "{target}",
+        "-w",
+        "/usr/share/wordlists/dirb/common.txt",
+        "-t",
+        "1",
+        "--timeout",
+        "5s",
+        "--no-error"
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "feroxbuster-small",
+      "tool": "feroxbuster",
+      "label": "Feroxbuster bounded discovery",
+      "hint": "Feroxbuster bounded discovery; validate installed version, target authorization and request limits.",
+      "target_kind": "url",
+      "risk": "active",
+      "mode": "review",
+      "argv": [
+        "--url",
+        "{target}",
+        "--threads",
+        "1",
+        "--rate-limit",
+        "1",
+        "--depth",
+        "1",
+        "--no-recursion",
+        "--silent"
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "sqlmap-review",
+      "tool": "sqlmap",
+      "label": "SQLmap manual vulnerability evaluation",
+      "hint": "SQLmap manual vulnerability evaluation; validate installed version, target authorization and request limits.",
+      "target_kind": "url",
+      "risk": "intrusive",
+      "mode": "review",
+      "argv": [
+        "-u",
+        "{target}",
+        "--batch",
+        "--level",
+        "1",
+        "--risk",
+        "1",
+        "--threads",
+        "1"
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "wapiti-review",
+      "tool": "wapiti",
+      "label": "Wapiti web assessment",
+      "hint": "Wapiti web assessment; validate installed version, target authorization and request limits.",
+      "target_kind": "url",
+      "risk": "intrusive",
+      "mode": "review",
+      "argv": [
+        "-u",
+        "{target}",
+        "--scope",
+        "url"
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "testssl-review",
+      "tool": "testssl",
+      "label": "testssl.sh TLS audit",
+      "hint": "testssl.sh TLS audit; validate installed version, target authorization and request limits.",
+      "target_kind": "host",
+      "risk": "active",
+      "mode": "review",
+      "argv": [
+        "--quiet",
+        "{target}"
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "sslyze-cert",
+      "tool": "sslyze",
+      "label": "SSLyze certificate information",
+      "hint": "SSLyze certificate information; validate installed version, target authorization and request limits.",
+      "target_kind": "host",
+      "risk": "recon",
+      "mode": "autonomous",
+      "argv": [
+        "--certinfo",
+        "{target}"
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "masscan-review",
+      "tool": "masscan",
+      "label": "Masscan restricted two-port inventory",
+      "hint": "Masscan restricted two-port inventory; validate installed version, target authorization and request limits.",
+      "target_kind": "host",
+      "risk": "intrusive",
+      "mode": "review",
+      "argv": [
+        "--ports",
+        "80,443",
+        "--rate",
+        "1",
+        "{target}"
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "rustscan-review",
+      "tool": "rustscan",
+      "label": "RustScan bounded TCP check",
+      "hint": "RustScan bounded TCP check; validate installed version, target authorization and request limits.",
+      "target_kind": "host",
+      "risk": "active",
+      "mode": "review",
+      "argv": [
+        "--addresses",
+        "{target}",
+        "--ulimit",
+        "500",
+        "--timeout",
+        "5000",
+        "--",
+        "-sT",
+        "-Pn"
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "theharvester-review",
+      "tool": "theHarvester",
+      "label": "theHarvester open-source intelligence",
+      "hint": "theHarvester open-source intelligence; validate installed version, target authorization and request limits.",
+      "target_kind": "host",
+      "risk": "active",
+      "mode": "review",
+      "argv": [
+        "-d",
+        "{target}",
+        "-b",
+        "crtsh"
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "amass-passive",
+      "tool": "amass",
+      "label": "Amass passive asset discovery",
+      "hint": "Discovers related names only; never authorizes scanning discovered systems.",
+      "target_kind": "host",
+      "risk": "active",
+      "mode": "review",
+      "argv": [
+        "enum",
+        "-passive",
+        "-d",
+        "{target}"
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "subfinder-passive",
+      "tool": "subfinder",
+      "label": "Subfinder passive enumeration",
+      "hint": "Only passive name discovery, no automatic expansion to discovered assets; third-party services can receive the queried domain.",
+      "target_kind": "host",
+      "risk": "recon",
+      "mode": "autonomous",
+      "argv": [
+        "-d",
+        "{target}",
+        "-silent",
+        "-timeout",
+        "10"
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "enum4linux-review",
+      "tool": "enum4linux-ng",
+      "label": "Enum4linux-ng SMB reconnaissance",
+      "hint": "Enum4linux-ng SMB reconnaissance; validate installed version, target authorization and request limits.",
+      "target_kind": "host",
+      "risk": "active",
+      "mode": "review",
+      "argv": [
+        "-A",
+        "{target}"
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "smbclient-list-review",
+      "tool": "smbclient",
+      "label": "SMBclient anonymous share inventory",
+      "hint": "SMBclient anonymous share inventory; validate installed version, target authorization and request limits.",
+      "target_kind": "host",
+      "risk": "active",
+      "mode": "review",
+      "argv": [
+        "-L",
+        "{target}",
+        "-N",
+        "-g"
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "httpx-info",
+      "tool": "httpx-toolkit",
+      "label": "HTTPx response probing (requires ProjectDiscovery httpx)",
+      "hint": "Kali ProjectDiscovery httpx-toolkit (NOT Python httpx); no scheme fallback, one URL, low rate. Verify binary on this node.",
+      "target_kind": "url",
+      "risk": "recon",
+      "mode": "autonomous",
+      "argv": [
+        "-u",
+        "{target}",
+        "-nfs",
+        "-silent",
+        "-sc",
+        "-td",
+        "-rl",
+        "1"
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "dnsrecon-review",
+      "tool": "dnsrecon",
+      "label": "DNSRecon basic record discovery",
+      "hint": "DNSRecon basic record discovery; validate installed version, target authorization and request limits.",
+      "target_kind": "host",
+      "risk": "recon",
+      "mode": "review",
+      "argv": [
+        "-d",
+        "{target}",
+        "-t",
+        "std"
+      ],
+      "parameters": {}
+    }
+  ]
+}

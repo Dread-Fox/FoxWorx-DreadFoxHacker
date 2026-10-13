@@ -1,0 +1,92 @@
+{
+  "engagement_id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+  "nodes": [
+    {
+      "id": "engagement:aaaaaaaaaaaaaaaaaaaaaaaa",
+      "kind": "engagement",
+      "label": "Local lab · UI fixture",
+      "status": "active",
+      "origin": "operator",
+      "created": "2026-10-07T12:00:00Z"
+    },
+    {
+      "id": "run:ffffffffffffffffffffffff",
+      "kind": "run",
+      "label": "Inspect local web services",
+      "status": "running",
+      "origin": "rabbit-hole",
+      "created": "2026-10-07T12:01:00Z",
+      "step_count": 2
+    },
+    {
+      "id": "job:dddddddddddddddddddddddd",
+      "kind": "job",
+      "label": "nmap",
+      "tool": "nmap",
+      "status": "failed",
+      "origin": "rabbit-hole",
+      "created": "2026-10-07T12:02:00Z",
+      "job_id": "dddddddddddddddddddddddd",
+      "note": "Lab scan reviewed; inspect before reporting"
+    },
+    {
+      "id": "job:eeeeeeeeeeeeeeeeeeeeeeee",
+      "kind": "job",
+      "label": "curl",
+      "tool": "curl",
+      "status": "succeeded",
+      "origin": "rabbit-hole",
+      "created": "2026-10-07T12:03:00Z",
+      "job_id": "eeeeeeeeeeeeeeeeeeeeeeee"
+    },
+    {
+      "id": "observation:testfixture",
+      "kind": "observation",
+      "label": "HTTP 200 reported",
+      "status": "observed",
+      "origin": "tool-parser",
+      "created": "2026-10-07T12:04:00Z",
+      "confidence": "parsed-unverified",
+      "evidence_job_id": "eeeeeeeeeeeeeeeeeeeeeeee"
+    }
+  ],
+  "edges": [
+    {
+      "source": "engagement:aaaaaaaaaaaaaaaaaaaaaaaa",
+      "target": "run:ffffffffffffffffffffffff",
+      "kind": "investigation"
+    },
+    {
+      "source": "run:ffffffffffffffffffffffff",
+      "target": "job:dddddddddddddddddddddddd",
+      "kind": "run-step"
+    },
+    {
+      "source": "run:ffffffffffffffffffffffff",
+      "target": "job:eeeeeeeeeeeeeeeeeeeeeeee",
+      "kind": "run-step"
+    },
+    {
+      "source": "job:dddddddddddddddddddddddd",
+      "target": "job:eeeeeeeeeeeeeeeeeeeeeeee",
+      "kind": "retry"
+    },
+    {
+      "source": "job:eeeeeeeeeeeeeeeeeeeeeeee",
+      "target": "observation:testfixture",
+      "kind": "tool-observation"
+    }
+  ],
+  "counts": {
+    "failed": 1,
+    "succeeded": 1
+  },
+  "truncated": false,
+  "visible_node_ids": [
+    "engagement:aaaaaaaaaaaaaaaaaaaaaaaa",
+    "run:ffffffffffffffffffffffff",
+    "job:dddddddddddddddddddddddd",
+    "job:eeeeeeeeeeeeeeeeeeeeeeee",
+    "observation:testfixture"
+  ]
+}

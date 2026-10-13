@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "enabled_profiles": [
+    "tcp-connect",
+    "tcp-web",
+    "http-headers",
+    "http-options",
+    "http-status",
+    "http-get-limited",
+    "dns-a",
+    "dns-aaaa",
+    "dns-mx",
+    "dns-txt",
+    "dns-caa",
+    "dns-ns",
+    "dns-soa",
+    "dns-cname",
+    "whois",
+    "tls-certificate",
+    "web-fingerprint"
+  ],
+  "max_steps": 8,
+  "max_minutes": 15
+}

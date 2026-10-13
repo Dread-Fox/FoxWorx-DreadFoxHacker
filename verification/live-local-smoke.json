@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "scope": "live non-root localhost HTTP/PTY/jobs, mocked-free; no external inference, cloudflare or targets",
+  "uid": 1000,
+  "version": "3.3.3",
+  "checks": [
+    "token-free session without login cookie",
+    "browser Origin/CSRF request integrity",
+    "read-only kernel hardware inventory and management role protection",
+    "selected Ollama endpoint reflected in API",
+    "actual installed tool knowledge read and versioned operator note saved",
+    "online research disabled without administrator opt-in",
+    "real PTY websocket command output",
+    "terminal survives WebSocket disconnect",
+    "explicit single-use proposal approval",
+    "successful managed local command with captured stdout",
+    "live graph included managed job and persisted annotation",
+    "pet opt-in, background progression, private journal, pause and erase",
+    "offline fox conversations, personality memory preference and independent conversation clear",
+    "workbench pulse off by default, opt-in real event, no output leakage, pause and erase"
+  ]
+}

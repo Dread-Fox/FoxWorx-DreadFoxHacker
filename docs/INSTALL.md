@@ -1,4 +1,7 @@
-# Installation, remote access and recovery
+# Installation — local port 8765; no Cloudflare required
+
+**Current release: FoxWorx-DreadFoxHacker-v3.3.3.** Default installation works locally without Cloudflare, and optionally accepts one configured public HTTPS hostname without disabling localhost. See [LOCAL-SERVICE.md](LOCAL-SERVICE.md) for the exact Kali Pi procedure, preserving existing state, and optional future HTTPS proxy mode.
+
 
 ## 1. Choose the host account
 
@@ -10,17 +13,17 @@ Keep the host powered, cooled and backed by reliable storage. Job logs and artif
 
 ## 2. Extract and install
 
-Extract the release ZIP under your home directory. The top-level directory is `foxworx-kali-workbench-v3.0`. Use a path without whitespace, quotes, percent signs or backslashes; the installer validates this to avoid systemd quoting problems. Do not move it after installation without rerunning the installer.
+Extract the release ZIP under your home directory. The top-level directory is `FoxWorx-DreadFoxHacker-v3.3.3`. Use a path without whitespace, quotes, percent signs or backslashes; the installer validates this to avoid systemd quoting problems. Do not move it after installation without rerunning the installer.
 
 ```bash
-cd ~/foxworx-kali-workbench-v3.0
+cd ~/FoxWorx-DreadFoxHacker-v3.3.3
 bash scripts/install.sh --preflight # no modifications
 bash scripts/install.sh
 ```
 
-The installer creates `.venv`, installs pinned direct dependencies plus the LiteLLM AI extra by default, preserves/creates private configuration, and registers **foxworx-workbench.service** as your user. It requests sudo only for `python3`, `python3-venv`, and `ca-certificates`. It does not run an unattended full OS upgrade. `unzip` is needed separately to extract a ZIP.
+The installer creates `.venv`, installs pinned direct dependencies plus the LiteLLM AI extra by default, preserves existing credentials and persistent state, backs up and migrates the mode/port/origin to token-free localhost:8765, and registers **foxworx-workbench.service** as your user. It requests sudo only if `python3`, `python3-venv`, or `ca-certificates` is missing. It does not run an unattended full OS upgrade. `unzip` is needed separately to extract a ZIP.
 
-**Architecture-specific first-run defaults:** ARM64 nodes start with 2 managed jobs, 4 terminal sessions and a 256 MiB free-disk reserve. x86-64 nodes start with 4 jobs, 8 terminals and a 1024 MiB free-disk reserve. These are application resource limits, not guaranteed performance or CUDA settings. **Existing v2/v2.1 configuration is never overwritten with these defaults.**
+**Architecture-specific first-run defaults:** ARM64 nodes start with 2 managed jobs, 4 terminal sessions and a 256 MiB free-disk reserve. x86-64 nodes start with 4 jobs, 8 terminals and a 1024 MiB free-disk reserve. These are application resource limits, not guaranteed performance or CUDA settings. **Existing resource limits, secrets, and state are preserved; only mode/port/origin are migrated to local-only when needed.**
 
 See [Pi and Z790 platform guide](PLATFORMS.md), including optional GPU inference and SSH forwarding to a workstation-hosted model.
 
@@ -33,37 +36,27 @@ bash scripts/install.sh --no-start       # prepare without starting the service
 bash scripts/install.sh --without-ai     # skip LiteLLM; terminal/toolbox only
 ```
 
-The v2 service is distinct from v1's **foxworx.service**. If v1 is using port 8000, stop it deliberately before starting v2:
-
-```bash
-systemctl --user stop foxworx
-```
+The v2 service is distinct from v1's **foxworx.service**. If another service is already using port 8765, identify and resolve the port conflict before starting FOXWORX. Do not stop an unrelated process without reviewing it.
 
 Stopping a service can interrupt work. The installer does not delete or silently stop v1 or v2. It refuses to replace a running workbench service; stop it yourself after preserving needed evidence, then rerun the installer. V2.4 reuses the v2 settings and SQLite state; it does not delete the old source folder.
 
-## 3. Local setup and login
+## 3. Token-free local access
+
+Start the systemd user service and open the browser. There is no login token or sign-in screen:
 
 ```bash
-bash scripts/configure.sh --show-token
 systemctl --user status foxworx-workbench --no-pager
 ```
 
-Open `http://127.0.0.1:8000` on the host and paste the local setup token. For a workstation browser, first establish `ssh -L 8000:127.0.0.1:8000 operator@YOUR_PI_ADDRESS`. Keep the forwarded port identical to the configured port so Origin and Host checks match. A different browser origin will be rejected.
+**http://127.0.0.1:8765**
 
-Local mode is not anonymous: API requests require the setup login. It also rejects non-loopback peers, unexpected Host headers and Cloudflare forwarding headers. Do not treat these checks as permission to expose local mode publicly.
-
-```bash
-bash scripts/configure.sh --rotate-token
-systemctl --user restart foxworx-workbench
-```
-
-Rotation changes both the local token and signing secret. Restart applies it and invalidates old local cookies. Sign-out clears the browser cookie but does not cryptographically revoke a stolen cookie before its expiration; rotation is the response to suspected local-token compromise.
+The backend still validates the browser's Origin and CSRF header for mutations, and uses short-lived WebSocket tickets. These are application request-integrity checks, **not an authentication barrier**. With the default `open` mode, any visitor who can reach the endpoint shares the Linux service account's ability to run commands and access saved data. Cloudflare is optional and managed separately by you.
 
 ## 4. Configure AI provider and model
 
-In your authenticated browser, click **AI copilot → Model & keys**, choose one of the ten providers, save a provider key for cloud access if needed, select an exact model ID and click **Use this model**. The **Test selected connection** button makes a short real inference request. For local models on the current node or a private GPU desktop, enter administrator-approved endpoints in the private config first; see **[Universal AI providers](AI-PROVIDERS.md)**. There is no fixed model entitlement, and a provider website subscription is not necessarily API access.
+In your browser, click **AI copilot → Model & keys**, choose one of the ten providers, save a provider key for cloud access if needed, select an exact model ID and click **Use this model**. The **Test selected connection** button makes a short real inference request. For local models on the current node or a private GPU desktop, enter administrator-approved endpoints in the private config first; see **[Universal AI providers](AI-PROVIDERS.md)**. There is no fixed model entitlement, and a provider website subscription is not necessarily API access.
 
-To edit shared host credentials, Cloudflare configuration, or approved local endpoints:
+To edit optional AI credentials, local endpoints or proxy configuration:
 
 ```bash
 bash scripts/configure.sh
@@ -71,28 +64,9 @@ bash scripts/configure.sh
 
 The configuration is stored at `~/.config/foxworx-workbench/settings.env` with mode 600, outside the release directory. Do not paste keys into chat, a support request, an engagement, a screenshot or source control. An AI error does not disable terminal/toolbox operation. API use can incur provider charges; set provider project spending limits independently.
 
-## 5. Publish through Cloudflare Tunnel + Access
+## 5. Optional remote tunnel (not part of installation)
 
-These steps configure your own Cloudflare account; the installer does not perform them.
-
-1. Create a **self-hosted Access application** for a dedicated hostname such as `kali01.example.com`. Use restrictive Allow policies for named identities and enforce MFA through your identity/Access policy. Do not use a public Bypass policy for the app or its WebSocket path. Record the application **AUD** and team domain `https://YOURTEAM.cloudflareaccess.com`.
-2. Install **cloudflared's official architecture-matched Linux package** on the host and create an outbound named tunnel using Cloudflare's current dashboard instructions. Keep the tunnel token secret. Do not use a public quick tunnel for a full shell.
-3. Use `bash scripts/configure.sh` to set `FOXWORX_AUTH_MODE=cloudflare`, `FOXWORX_ORIGIN=https://kali01.example.com`, your team domain, AUD, and comma-separated permitted operator emails. The application's email allowlist is an additional check, not a replacement for Access policy. Restart the workbench.
-4. Publish the hostname to **http://127.0.0.1:8000** (or your configured local port). Keep the browser's public Host header intact; an origin Host rewrite to localhost will fail the app's exact-host check. Use an HTTP application route: the web terminal travels over the application's own WebSocket, not Cloudflare's separate SSH rendering feature.
-5. Require Access at the edge and, where configured, tunnel origin protection as an additional layer. The workbench itself verifies the JWT signature, issuer, audience, expiry and allowed email. It does not trust a bare email header. Do not publish an unprotected alternate hostname to the same origin.
-6. Test a permitted user and an explicitly nonpermitted user. Check Terminal open/resize/reconnect, a harmless local job and evidence download through the public hostname. Confirm your allowed identities and actual MFA behavior in your tenant.
-
-Before public use, test that the origin rejects unauthenticated API access. Since cloudflare mode also checks Host, use the configured public Host while connecting locally:
-
-```bash
-curl -i http://127.0.0.1:8000/api/session -H 'Host: kali01.example.com'
-```
-
-Expected: **401**, not user data. Without the matching Host, **403** is expected. Do not weaken host checking to make this command succeed. There is no unauthenticated diagnostics endpoint in cloudflare mode.
-
-Cloudflare edge restarts, connectivity or Access expiry may close a WebSocket. The client obtains a fresh one-use ticket and reconnects; it never repeats typed input automatically. The backend also limits a socket's identity lifetime to at most 15 minutes or the Access token expiry, whichever is sooner. Removing a user from Access may not instantly invalidate an already issued token; verify revocation/session-duration behavior in your tenant.
-
-**Cloudflare Tunnel is ingress only.** Nmap, curl and other Kali tools normally send traffic from the Pi's own network path. This distribution does not provide Cloudflare egress, a scan proxy or hidden source IPs.
+No tunnel, domain or Cloudflare credentials are required. FOXWORX binds only to `127.0.0.1:8765` and works in the Pi's own desktop browser immediately after install. If you want a tunnel later, publish your selected hostname to `http://127.0.0.1:8765` in your existing Cloudflare setup. The FOXWORX app requires **no** tunnel setting, public-origin allowlist, setup token, or Cloudflare configuration. Preserve WebSocket support. Everyone who can reach the hostname can operate the Kali workbench, so configure external access restrictions independently if you want them.
 
 ## 6. Keep the service available after logout
 
@@ -106,7 +80,7 @@ For startup without an interactive login, an administrator can review and enable
 sudo loginctl enable-linger "$USER"
 ```
 
-This is not done automatically. Test an actual reboot, then verify both cloudflared and the workbench. Do not assume a successful local `systemctl` call proves remote reachability.
+This is not done automatically. Test an actual reboot, then verify the workbench. Do not assume a successful local `systemctl` call proves remote reachability.
 
 ## 7. Upgrade and rollback
 
@@ -205,3 +179,28 @@ bash scripts/doctor.sh
 If you customized `FOXWORX_STATE`, back up that exact location instead. The installer reuses existing private settings and data. Open the web interface and select an engagement, then select **Graph**. Run one harmless authorized managed job and confirm a node appears and links to the saved evidence. For live Rabbit Hole branching, configure and authorize the existing administrator policy as described earlier in this guide.
 
 If anything fails, stop the service and inspect `journalctl --user -u foxworx-workbench`. Roll back by reinstalling v2.9 into its **separate source directory** with your backed-up compatible state, while the service is stopped. Downgrades without a known compatible backup are not guaranteed. See [Investigation Graph](INVESTIGATION-GRAPH.md) for behavior and privacy limits.
+
+
+## v3.1 Codex Agent upgrade (optional)
+
+The FOXWORX installer does **not** install Codex automatically, and an OpenAI API key is **not** required for Codex's first-party ChatGPT account login. See [CODEX-AGENT.md](CODEX-AGENT.md) for current official installation commands, verification, eligibility, per-operator isolation limits and troubleshooting.
+
+After installing Codex CLI as the same non-root service account, verify the absolute executable path via `command -v codex`. If installed in a nonstandard directory, add that absolute bin directory to `FOXWORX_EXTRA_TOOL_PATHS` in the private FOXWORX settings file, then restart the service. Example: `FOXWORX_EXTRA_TOOL_PATHS=/home/kali/.local/share/npm/bin`. Never add a directory writable by a less-trusted user to the executable search path.
+
+**For Cloudflare installations:** Codex authentication goes through OpenAI's verification page, accessed from your personal browser. The Codex process and its private credentials stay on the Kali node. Do not open an alternate unauthenticated port or ask FOXWORX for an OpenAI password. The same Kali Linux service account can access files from every FOXWORX actor despite the API ownership controls; use separate Unix users or separate nodes for operators who are not mutually trusted.
+
+On a service restart, active Codex turns end, while saved Codex sessions and managed sign-in can persist on the Kali node. Your existing AI API providers and Rabbit Hole policy are unchanged.
+
+## v3.2 Hardware Intelligence acceptance check
+
+The Hardware workspace runs without `lspci`, `lsusb`, or `iw` installed because it primarily reads Linux sysfs. `iw` is optional; without it wireless monitor-mode capability is reported as unknown. The existing `nvidia-smi` integration remains optional.
+
+After upgrading and restarting the workbench, select **Hardware → Rescan**. Confirm visible network interfaces against `ip -br link`, and validate that the management connection's default-route interface is marked **Protected**. If using a separate Alfa adapter, verify it produces a Linux WLAN interface; a USB record alone does not prove that its driver is ready. Designate a separate nonmanagement adapter as Assessment only after confirming your own network topology.
+
+To test binding, use **Toolbox → curl → HTTP headers**, enter an authorized test URL, and select the named Assessment interface. Review the preview; a supported libcurl adds `--interface if!<name>`. The kernel may reject device binding if permissions or routes are missing. Do not use this mechanism as network isolation.
+
+Read [Hardware Intelligence](HARDWARE-INTELLIGENCE.md) for supported classes, administrator considerations and verification commands. All previous configuration/state, including Codex sign-in, DreadFox and engagement history, is preserved.
+
+## v3.3 Discord team integration (optional)
+
+The Discord bridge is disabled until a bot token and channel ID are set on the host. See [Discord Team Intelligence](DISCORD-TEAM.md) for the least-privilege bot setup, Message Content requirements, team-key mapping, draft approvals, rate-limit handling, privacy and troubleshooting. **Never place the bot token in source control.** Existing v3.2 databases and configuration are preserved.

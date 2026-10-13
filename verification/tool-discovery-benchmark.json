@@ -1,0 +1,35 @@
+{
+  "host": {
+    "architecture": "x86_64",
+    "python": "3.13.9",
+    "cpu": "",
+    "platform": "Linux-6.16.8+kali-amd64-x86_64-with-glibc2.43"
+  },
+  "kind": "Synthetic in-memory inventory; metadata enrichment and filesystem scan not timed",
+  "results": [
+    {
+      "tools": 4000,
+      "index_build_ms": 25.57,
+      "warm_query_median_ms": 0.009,
+      "warm_query_p95_ms": 0.025,
+      "shortlist_bytes": 577,
+      "page_bytes": 10260
+    },
+    {
+      "tools": 20000,
+      "index_build_ms": 132.71,
+      "warm_query_median_ms": 0.009,
+      "warm_query_p95_ms": 0.017,
+      "shortlist_bytes": 580,
+      "page_bytes": 10264
+    },
+    {
+      "tools": 50000,
+      "index_build_ms": 338.55,
+      "warm_query_median_ms": 0.009,
+      "warm_query_p95_ms": 0.017,
+      "shortlist_bytes": 580,
+      "page_bytes": 10264
+    }
+  ]
+}

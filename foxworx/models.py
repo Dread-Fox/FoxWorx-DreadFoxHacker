@@ -1,5 +1,5 @@
 from typing import Literal
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from .scope import validate_rule
 
 class StrictModel(BaseModel):
@@ -101,10 +101,24 @@ class RabbitSpec(StrictModel):
     engagement_id: str = Field(min_length=1, max_length=64)
     objective: str = Field(min_length=8, max_length=4000)
     target: str = Field(min_length=1, max_length=2048)
-    profiles: list[str] = Field(min_length=1, max_length=64)
-    max_steps: int = Field(default=8, ge=1, le=16)
-    max_minutes: int = Field(default=15, ge=1, le=30)
+    execution_mode: Literal['workflows','installed_cli'] = 'workflows'
+    profiles: list[str] = Field(default_factory=list, max_length=64)
+    max_steps: int = Field(default=8, ge=1, le=10000)
+    max_minutes: int = Field(default=15, ge=1, le=1440)
     authorized: bool = False
+    @model_validator(mode='before')
+    @classmethod
+    def mode_defaults(cls, value):
+        if isinstance(value,dict) and value.get('execution_mode')=='installed_cli':
+            value={**value}
+            value.setdefault('max_steps',64)
+            value.setdefault('max_minutes',60)
+        return value
+    @model_validator(mode='after')
+    def require_workflows(self):
+        if self.execution_mode=='workflows' and not self.profiles:
+            raise ValueError('Select at least one workflow')
+        return self
     @field_validator('profiles')
     @classmethod
     def unique_profiles(cls, profiles):
@@ -119,6 +133,15 @@ class RabbitSpec(StrictModel):
     def valid_target(cls, target):
         from .scope import normalize_target
         return normalize_target(target)
+
+
+class RabbitMessage(StrictModel):
+    message: str = Field(min_length=1,max_length=4000)
+    @field_validator('message')
+    @classmethod
+    def nonempty(cls,value):
+        if not value.strip():raise ValueError('Instruction must not be empty')
+        return value.strip()
 
 
 class RegisteredProposalSpec(StrictModel):

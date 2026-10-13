@@ -1,3 +1,5 @@
+> **Installed CLI autonomy:** These template restrictions describe workflow mode. A schema-3 policy may separately enable broader installed-tool execution and higher finite budgets. Legacy policies keep their permissions. See [Rabbit Hole](RABBIT-HOLE.md) and the [schema-3 example](../policy/adapter-policy.v3.installed-cli.example.json).
+
 # FOXWORX v2.8 — CLI Tool Adapter Library
 
 ## The new feature

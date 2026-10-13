@@ -51,6 +51,8 @@ class StubJobs:
     async def approve(self, owner, id, digest, authorized):
         assert authorized and digest=='a'*64
         return {'id':'job-'+str(len(self.commands)), 'status':'queued'}
+    def delegate(self,owner,proposal,run_id,instruction_revision):
+        return proposal
     async def stop(self, owner, id):
         self.stopped.append(id)
     def output(self, id, owner, offset=0):
@@ -103,7 +105,7 @@ async def test_scope_must_contain_exact_target(setup, engagement):
     assert not jobs.commands
 
 @pytest.mark.parametrize('values',[
-    {'profiles':['advanced']}, {'profiles':[]}, {'max_steps':100}, {'max_minutes':0},
+    {'profiles':['advanced']}, {'profiles':[]}, {'max_steps':10001}, {'max_minutes':0},
     {'target':'http://127.0.0.1/\nother'},
 ])
 def test_invalid_grants_rejected(engagement,values):

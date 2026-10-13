@@ -77,3 +77,36 @@ async def test_ai_routes_each_operator_and_does_not_forward_history_to_new_provi
     assert seen[0]['model']=='anthropic/claude-test' and seen[0]['api_key']=='personal-claude'
     assert 'HIDDEN-OPENAI-HISTORY' not in json.dumps(seen[0]['messages'])
     assert copilot.store.list('chat','local-operator')[0]['provider']=='anthropic'
+
+async def test_tutor_receives_ranked_shortlist_without_requesting_lookup(copilot,engagement):
+    from foxworx.registry import ToolDiscovery
+    copilot.discovery=ToolDiscovery(copilot.registry,copilot.cfg.state)
+    captured=[]
+    async def fake(**kwargs):
+        captured.append(kwargs)
+        return {'choices':[{'message':{'content':'Found the local HTTP tools','tool_calls':[]}}]}
+    copilot.gateway=ModelGateway(completion=fake)
+    await copilot.chat('local-operator',ChatSpec(engagement_id=engagement['id'],message='Inspect HTTP headers',mode='tutor'))
+    body=captured[0]['messages'][1]['content'].split('\n',1)[1]
+    context=json.loads(body)
+    assert context['tool_discovery']['installed_count']>0
+    assert context['tool_discovery']['returned']<=10
+    assert any(t['name']=='curl' for t in context['tool_discovery']['results'])
+    copilot.discovery.close()
+
+async def test_lookup_returns_counts_and_supports_pagination(copilot,engagement):
+    from foxworx.registry import ToolDiscovery
+    copilot.discovery=ToolDiscovery(copilot.registry,copilot.cfg.state)
+    calls=[]
+    async def fake(**kwargs):
+        calls.append(kwargs)
+        if len(calls)==1:
+            return {'choices':[{'message':{'content':None,'tool_calls':[{'id':'lookup','type':'function',
+                'function':{'name':'lookup_tools','arguments':json.dumps({'query':'','limit':2})}}]}}]}
+        result=json.loads(kwargs['messages'][-1]['content'])
+        assert result['returned']==2 and result['total_matches']>2 and result['next_cursor']
+        return {'choices':[{'message':{'content':'Search is paginated','tool_calls':[]}}]}
+    copilot.gateway=ModelGateway(completion=fake)
+    out=await copilot.chat('local-operator',ChatSpec(engagement_id=engagement['id'],message='Find available tools',mode='tutor'))
+    assert out['answer']=='Search is paginated' and not out['proposals']
+    copilot.discovery.close()

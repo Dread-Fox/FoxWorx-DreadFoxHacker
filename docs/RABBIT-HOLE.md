@@ -1,81 +1,89 @@
-> **v2.8 extension:** Rabbit Hole can now use schema-2 administrator-registered, typed command templates with explicit operator grant, in addition to the 17 built-in recipes. Review-only templates can be proposed by Copilot but never executed unattended. See [CLI-ADAPTERS.md](CLI-ADAPTERS.md).
+# Rabbit Hole — autonomous tool selection and investigation
 
-# Rabbit Hole — bounded autonomous guided investigation (v2.7)
+Rabbit Hole carries out an operator-authorized task by selecting tools, checking actual job output and trying alternatives within a finite run. One initial authorization covers the permitted execution mode, exact target and budgets; it does not ask for approval on each alternative command.
 
-Rabbit Hole is an **operator-initiated, scope-bound, iterative job planner** for an explicitly authorized lab or engagement. Unlike normal Copilot, it may launch more than one **guided** Kali workflow without stopping for per-command approval. It is **not** an unrestricted autonomous shell agent, and is **not** a network sandbox.
+## Choose an execution mode
 
-## Operator workflow
+| Mode | What the agent may execute |
+|---|---|
+| Selected administrator workflows | Only selected, enabled guided recipes or autonomous typed adapters. Defaults: 8 decisions, 15 minutes. |
+| Installed CLI tools | Installed noninteractive executables with model-constructed literal arguments, plus applicable enabled workflows. Defaults: 64 decisions, 60 minutes. Requires a schema-3 administrator policy with `allow_installed_cli: true`. |
 
-1. In FOXWORX, create/select the correct **engagement**, enter the exact permitted target(s), exclusions, authorization notes, and permitted automation/rate limits. Verify the external program's up-to-date rules yourself; FOXWORX does not fetch/verify HackerOne permissions.
-2. Select and test a cloud or self-hosted AI model under **Model & keys**. Your inference server must support function calls or a simple structured JSON reply. The operator should first test routine Copilot/Tutor use.
-3. In **AI copilot**, select **Rabbit Hole · bounded automatic retries**.
-4. Enter one **exact target** and select the **administrator-enabled, installed adapters** Rabbit Hole may use. Specify a maximum number of agent decisions (1–16) and run duration (1–30 minutes). One decision can launch at most one managed job.
-5. Write a focused goal in the prompt, for example: *“Determine whether the authorized local lab host exposes HTTP or HTTPS service ports and explain what can be concluded from the checks.”* Review the profile selection and one-time authorization box. Press **Authorize & run**.
-6. Observe the run's live status and individual job links. The fox companion remains independent; Rabbit Hole is part of the main agent, not DreadFox.
-7. Click **Stop Rabbit Hole** whenever needed. Completed outputs remain in Jobs and exported engagement evidence. Failed/blocked runs provide a summary and possible next steps.
+Workflow-only grants retain their restrictions. Schema-1/2 policies do not enable installed-tool autonomy. A review-only adapter cannot run as an autonomous workflow. **Installed CLI mode is broader:** it can invoke the underlying executable directly without using its review-only adapter. The initial mode selection authorizes that broader capability.
 
-**There is no automatic continuation after a crash or service restart.** All queued/running records are marked interrupted on recovery. A new run requires a new explicit authorization. Starting one run does not grant a permanent AI capability.
+Commands use the existing managed-job runner, engagement working directory, and non-root Linux service account. There is no interactive stdin or embedded GUI workflow. The app does not construct a shell pipeline from command text, grant elevated privileges, or expose native model terminal tools. Executable arguments can still enable a program's own scripting, file access, child processes or network behavior; this is **not an OS or network sandbox**.
 
-## Current preapproved workflows (v2.6 baseline)
+## Start a task
 
-| Workflow | Executable | Allowed operation | Limits |
-|---|---|---|---|
-| `tcp-connect` | nmap | TCP service/version inventory | one host, 100 common ports, 10 probes/sec max configured, 60s host timeout |
-| `tcp-web` | nmap | TCP service/version inventory on 80,443,8080,8443 | one host, 10 probes/sec max configured, 60s host timeout |
-| `http-headers` | curl | HTTP(S) HEAD response headers | one exact URL, no redirects, 20s request limit |
-| `http-options` | curl | HTTP(S) OPTIONS response metadata | one exact URL, no redirects, 20s request limit |
-| `dns-a` | dig | DNS A lookup | one domain, one resolver call with limited retry |
-| `dns-aaaa` | dig | DNS AAAA lookup | one domain, limited retry |
-| `dns-mx` | dig | DNS MX lookup | one domain, limited retry |
-| `dns-txt` | dig | DNS TXT lookup | one domain, limited retry |
-| `whois` | whois | registration lookup | one domain, one invocation |
+1. Create or select an engagement. Record permitted targets, exclusions, operator rules and applicable automation limits.
+2. Select a working provider and model in **Provider & model**, then choose **Rabbit Hole**.
+3. Enter the exact authorized target and choose the tool-selection mode. Workflow mode requires selecting installed administrator-enabled workflows. Installed CLI mode discovers alternatives automatically without selecting each tool.
+4. Choose finite decision and time budgets within the administrator policy. Write a focused objective and confirm the one-time authorization.
+5. Press **Authorize & run**. Inspect reasons, job links, exit status and saved output as the agent proceeds.
+6. Use **Stop Rabbit Hole** to cancel remaining actions and terminate the active managed job.
 
-v2.7 expands this with eight more fixed-purpose adapters, all subject to the root-owned policy described in [ADAPTER-POLICY.md](ADAPTER-POLICY.md). **On upgrade, no autonomous adapter can run until the administrator installs that policy.** Only **installed** tools can run. If a dependency is absent, the agent receives the error and may select another approved method. Tools with interactive prompts, GUI requirements, arbitrary shell pipelines, file writes, plugins, credential attempts, or exploitation workflows are **not delegated** to Rabbit Hole in this release. Those remain available under the manual terminal/toolbox interfaces and existing human approvals where appropriate.
+The backend supplies a ranked shortlist before each decision. `lookup_tools` can refine or paginate discovery; documentation functions can explain unfamiliar tools. Search ranking is not proof that an executable is suitable or has the necessary permissions. See [tool discovery](TOOL-DISCOVERY.md).
 
-A hostname/IP target can be used by the HTTP profiles as `http://host/` if that derived URL is inside the engagement's saved scope. Supply `https://host/path` explicitly when required. HTTP URL-only authorization **never** implicitly grants whole-host port scans. Scope is checked on every derived profile target. The profile selection is fixed at run start; the model cannot add another target or workflow mid-run. Model-generated text never becomes a shell command.
+## Supplemental operator instructions
 
-## Retry behavior and termination
+While a run is active, the composer becomes **Send instruction**. Follow-ups steer the existing objective without changing targets, exclusions, privileges, elapsed time or remaining budget. Received instructions are shown as pending until applied before a model decision.
 
-Every iteration: FOXWORX asks the selected model for exactly one `choose_workflow` or `finish_run` action, validates it against the operator's saved grant, prepares a **guided** JobManager proposal, and executes it using the same fingerprint, scope-stamp, timeout, output and concurrency gates as manual jobs. The service records an audit `rabbit-auto-job` event. It supplies the next model step with the previous workflow's status, exit code and **redacted, bounded output tail** so it can adapt after failed diagnostics. The normal Copilot proposal approval path is unchanged.
+An instruction arriving during inference invalidates that proposed action; the agent replans before executing. An already-running job continues unless the operator presses Stop. Up to 64 messages of 4,000 characters are retained per run. Every accepted follow-up is included in subsequent decisions so earlier instructions are not silently discarded. Long instructions consume the selected model's context; a provider context-limit error stops the run rather than dropping instructions. The initial objective and authorization remain present.
 
-A run ends with: (1) model-reported success supported by at least one exited-successfully job, (2) a reported hard block and next steps, (3) the iteration/time budget, (4) repeated invalid/failed actions, (5) changed engagement authorization, (6) insufficient resources or missing permitted tools, (7) model/provider failure, or (8) operator stop. Failed steps are not silently counted as success. A model-reported result is **not independent proof that the user's objective is satisfied**; inspect the actual evidence.
+Only messages submitted through the operator endpoint are follow-ups. Tool output, manuals, Discord messages and model text cannot update the run authorization.
 
-**Default: eight decisions and 15 minutes.** **Hard caps: 16 decisions and 30 minutes** per run. At most two active Rabbit Hole runs per node, and only one per operator. Existing managed-job node concurrency, output, disk reserve, per-job timeout, and non-root service limitations still apply. This prevents unbounded expense/resource use. To continue beyond limits, review outputs and authorize a separate new bounded run.
+## Budgets, retries and termination
 
-## Privacy and limitations
+Schema-3 policy supports administrator limits up to **10,000 decisions and 1,440 minutes**. The supplied installed-CLI policy example caps runs at 256 decisions and 240 minutes. Older policy schemas retain their 16-decision/30-minute ceilings. Actual run budgets cannot exceed the active policy. At most one run per operator and two per node remain active.
 
-- The selected AI provider gets the operator's objective, exact target, permitted workflow list, previous workflow status, and a bounded excerpt of generated output. Logs and prompts may contain confidential details. Redaction is best-effort, not a privacy guarantee; select a trusted local inference model for private engagements and avoid targets with secrets in URLs.
-- Run records and managed job logs reside in the same local SQLite/state tree as v2.5. They are **not app-encrypted at rest**. Users of the same Linux account with unrestricted terminal access can inspect them.
-- App-layer target checks are **not destination-level egress controls**. DNS rebinding, subprocess network access and program-specific scanner behavior may bypass these checks; do not rely on FOXWORX alone to enforce client scope. A restricted VM/container/namespace with enforced egress policies is required before treating unattended assessment as contained.
-- Network requests from `dig`/`whois` may contact resolvers/referrals not named by the apparent target. The `nmap --max-rate` flag is not a universal network traffic limiter. External program terms might disallow all automatic testing.
-- This version **does not** let the model execute every installed Kali command, arbitrary arguments, shell pipelines, exploit modules, brute-force tools, or a GUI workflow. Adding further safe typed adapters is an extension project with additional policy and integration testing.
-- A result may be blocked because the chosen model can't produce structured actions, tools are missing, policy changed, available profiles aren't sufficient, or the platform's resources/time budgets are exhausted.
-- The UI can run with Cloudflare Tunnel, but Cloudflare Access authentication/OS permissions and deployment need independent testing on your Pi/Z790.
+Every model decision consumes a step, including lookup, documentation and a discarded outdated action. Automatic shortlist generation does not consume a step. Supplemental prompts do not reset budgets. Per-job timeout, output, concurrency and disk-reserve checks also apply.
 
-## Backend API (authenticated)
+The agent receives exit status and bounded, redacted output to diagnose failures. After two failures of the same executable/argument combination, it must choose another command or finish blocked. Workflow mode similarly avoids repeating a failed workflow indefinitely. A missing executable produces an error the agent can use to select an alternative.
 
-`POST /api/rabbit-runs` requires CSRF and JSON:
+Runs stop when finished, blocked, out of budget, repeatedly invalid, canceled, or affected by policy/scope revocation. Executable identity and run authorization are checked again immediately before process creation. No run resumes automatically after service restart; interrupted work requires a new run authorization. Model-reported success requires at least one successful job, but still needs evidence review to establish that the objective was met.
+
+## Execution and privacy boundaries
+
+Installed CLI mode shares the service account's file and network access. Its stated target is not a destination firewall. Arbitrary arguments cannot be generically verified against every tool's network behavior; the operator must choose an appropriate assessment environment and permitted methods. No new sudo or root access is provided.
+
+The selected model receives the objective, scope/notes, supplemental instructions, relevant tool metadata, workflow definitions and bounded job results. Redaction is best effort. Local run records, instructions and job output are not app-encrypted; operators sharing the Linux account can inspect them. DreadFox's separate companion privacy boundary remains unchanged.
+
+## Administrator setup
+
+Review and validate [the schema-3 example](../policy/adapter-policy.v3.installed-cli.example.json), then install it using trusted OS commands:
+
+```bash
+bash scripts/adapter-policy.sh validate policy/adapter-policy.v3.installed-cli.example.json
+sudo install -d -o root -g root -m 0755 /etc/foxworx
+sudo install -o root -g root -m 0644 policy/adapter-policy.v3.installed-cli.example.json /etc/foxworx/adapter-policy.json
+```
+
+Do not sudo-execute application scripts from the operator-writable checkout. Policy replacement revokes existing active runs; refresh permissions before starting another run. FOXWORX does not install or change the root-owned policy automatically. See [administrator policy](ADAPTER-POLICY.md).
+
+## Backend API
+
+Use the normal actor access and Origin/CSRF checks. Default token-free deployments use a shared local operator identity.
+
+`POST /api/rabbit-runs` accepts:
 
 ```json
 {
-  "engagement_id": "<existing 24-char id>",
-  "objective": "Review authorized local lab TCP and DNS basics",
+  "engagement_id": "<existing engagement id>",
+  "objective": "Inspect the authorized local lab service and summarize evidence",
   "target": "127.0.0.1",
-  "profiles": ["tcp-connect", "dns-a"],
-  "max_steps": 8,
-  "max_minutes": 15,
+  "execution_mode": "installed_cli",
+  "profiles": [],
+  "max_steps": 64,
+  "max_minutes": 60,
   "authorized": true
 }
 ```
 
-`GET /api/rabbit-runs?engagement_id=...` lists operator-owned runs; `GET /api/rabbit-runs/{id}` returns current progress and job references; `POST /api/rabbit-runs/{id}/stop` requests cancellation. Authentication, CSRF, Origin and owner checks are inherited from FOXWORX. **Do not pass a generic bearer token for a system account to untrusted users.**
+Omitting `execution_mode` retains workflow-only behavior and requires `profiles`. Installed CLI mode can omit profiles and use applicable administrator-enabled autonomous workflows alongside direct CLI tools.
 
-## Troubleshooting
+- `GET /api/rabbit-runs?engagement_id=...`: list owned runs.
+- `GET /api/rabbit-runs/{id}`: status, consumed decisions, steps and instruction revisions.
+- `POST /api/rabbit-runs/{id}/messages` with `{"message":"Try a different HTTP client"}`: append an operator instruction. Ended/stopping runs reject messages with 409; invalid text returns 422; the message limit returns 429.
+- `POST /api/rabbit-runs/{id}/stop` with `{}`: stop the run and its active job.
 
-- **Missing tools:** `command -v nmap curl dig whois`, then refresh the toolbox after installing OS packages permitted by your administrator. FOXWORX does not install scanning tools automatically.
-- **Model stops early:** check that the selected provider supports function calling or strict single-action JSON. Check provider credentials, quotas, and server logs.
-- **Scope rejection:** compare the exact target and *derived profile target* with the engagement inclusion/exclusion entries. Save changes, then authorize a **new** run.
-- **No progress:** check whether a managed job remains active in Jobs; use Stop Rabbit Hole and review system logs before retrying.
-- **Resource limit:** lower budgets and concurrent job counts, free space, or start later; do not turn off safeguards to make automation proceed.
-
-For complete setup, see [INSTALL.md](INSTALL.md), [SECURITY.md](SECURITY.md), and [OPERATOR-GUIDE.md](OPERATOR-GUIDE.md).
+Execution records and evidence remain linked to the engagement and Investigation Graph. Ordinary Copilot proposals still require individual operator approval.

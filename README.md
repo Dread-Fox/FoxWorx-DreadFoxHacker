@@ -107,7 +107,9 @@ Read the [operator guide](docs/OPERATOR-GUIDE.md) for the full workflow.
 
 ## AI modes and optional integrations
 
-**Tutor** provides explanations and read-oriented assistance. **Copilot** can prepare managed command proposals; execution requires an operator's explicit approval. **Rabbit Hole** can iterate through approved guided workflows after the operator grants a specific target, permitted workflows, and finite budget for one run. Rabbit Hole requires a separately installed administrator policy and remains disabled without it. It cannot expand its own grant or execute unrestricted model-generated shell commands.
+**Tutor** provides explanations and read-oriented assistance. **Copilot** can prepare managed command proposals; execution requires an operator's explicit approval. **Rabbit Hole** discovers tools, checks results and tries alternatives automatically after one initial task authorization. Choose selected administrator workflows or, with an enabled schema-3 policy, installed CLI tools with model-constructed arguments. Installed CLI mode uses the Linux service account's file and network access; its stated target is not an enforced sandbox. Follow-up prompts steer the active task while its targets and finite budget stay fixed. Rabbit Hole requires a separately installed administrator policy.
+
+**Large tool inventories:** The backend ranks installed tools using names, descriptions and local package/manual metadata. Agents receive at most 10 relevant candidates, then can refine filters or page through more matches. There is no fixed inventory-count ceiling; synthetic tests cover up to 50,000 entries. Inventory refresh runs in the background when stale, and manual Refresh remains available. See [tool discovery](docs/TOOL-DISCOVERY.md).
 
 The provider selector supports cloud providers, Codex, and administrator-approved local inference servers. Model availability, credentials, costs, and tool-calling support depend on the selected provider. A successful connection check does not establish that every AI workflow is supported. Codex offers its own account sign-in flow; operators should not put account passwords, cookies, or access tokens into workbench chat.
 
@@ -160,6 +162,7 @@ For verification details, consult the dated [release report](verification/TEST-R
 - [Security boundaries](docs/SECURITY.md)
 - [Tool coverage and prerequisites](docs/TOOL-COVERAGE.md)
 - [Tool Intelligence](docs/TOOL-INTELLIGENCE.md)
+- [Ranked tool discovery](docs/TOOL-DISCOVERY.md)
 - [Hardware Intelligence](docs/HARDWARE-INTELLIGENCE.md)
 - [Investigation Graph](docs/INVESTIGATION-GRAPH.md)
 - [Developer guide](docs/DEVELOPER.md)

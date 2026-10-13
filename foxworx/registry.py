@@ -7,6 +7,7 @@ import re
 import shlex
 import subprocess
 import time
+import threading
 from .config import Settings
 
 NAME = re.compile(r'^[A-Za-z0-9][A-Za-z0-9_.+-]{0,149}$')
@@ -17,8 +18,13 @@ class Registry:
         self.cfg = cfg
         self.items: dict[str, dict] = {}
         self.scanned = 0.0
+        self._scan_lock=threading.RLock()
 
     def scan(self) -> list[dict]:
+        with self._scan_lock:
+            return self._scan()
+
+    def _scan(self) -> list[dict]:
         found = {}
         for directory in self.cfg.tool_path.split(':'):
             p = Path(directory)
@@ -91,3 +97,6 @@ class Registry:
         p = Path(path)
         s = p.stat()
         return {'realpath':str(p.resolve()), 'inode':s.st_ino, 'size':s.st_size, 'mtime_ns':s.st_mtime_ns}
+
+# Public discovery facade; implementation has no dependency on Registry.
+from .tool_discovery import ToolDiscovery

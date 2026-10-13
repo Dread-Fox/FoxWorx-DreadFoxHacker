@@ -349,6 +349,9 @@ async function refreshAdapterPolicy(){
   const button=$('rabbit-policy-refresh');button.disabled=true;
   try{
     const data=await api('/api/adapter-policy');S.rabbitPolicy=data;
+    const cliOption=$('rabbit-execution-mode').querySelector('[value="installed_cli"]');
+    cliOption.disabled=!data.allow_installed_cli;
+    if(!data.allow_installed_cli)$('rabbit-execution-mode').value='workflows';
     const list=$('rabbit-adapter-list');list.replaceChildren();
     $('rabbit-policy-status').textContent=data.status==='active'
       ?`Root-owned policy active · ${data.profiles.filter(x=>x.enabled).length} enabled · ${data.profiles.filter(x=>x.available).length} installed and available · ${data.max_steps} decisions / ${data.max_minutes} minutes maximum`
@@ -387,6 +390,7 @@ async function refreshAdapterPolicy(){
       $('rabbit-steps').value=String(Math.min(Number($('rabbit-steps').value)||8,data.max_steps));
       $('rabbit-minutes').value=String(Math.min(Number($('rabbit-minutes').value)||15,data.max_minutes));
     }
+    updateRabbitExecutionMode(false);
     $('rabbit-authorized').checked=false;
     syncRabbitSubmit();
   }catch(error){
@@ -396,6 +400,17 @@ async function refreshAdapterPolicy(){
     syncRabbitSubmit();throw error;
   }finally{button.disabled=false;}
 }
+function updateRabbitExecutionMode(reset=true){
+  const cli=$('rabbit-execution-mode').value==='installed_cli';
+  const caps=S.rabbitPolicy||{};
+  if(reset){$('rabbit-steps').value=String(Math.min(cli?64:8,caps.max_steps||16));$('rabbit-minutes').value=String(Math.min(cli?60:15,caps.max_minutes||30));}
+  $('rabbit-execution-note').textContent=cli
+    ?'The agent may construct commands for installed noninteractive tools under this run grant. Commands have the Linux service account’s file and network access; target scope is not a sandbox.'
+    :'Selected workflows use administrator-reviewed command templates.';
+  $('rabbit-authorized').checked=false;
+  syncRabbitSubmit();
+}
+$('rabbit-execution-mode').onchange=()=>updateRabbitExecutionMode();
 function filterRabbitAdapters(){
   const term=$('rabbit-adapter-search').value.trim().toLowerCase();
   for(const row of $('rabbit-adapter-list').children)row.hidden=Boolean(term)&&!row.dataset.search.includes(term);
@@ -448,8 +463,11 @@ $('ai-mode').addEventListener('change',updateRabbitMode);
 function stopRabbitPolling(){if(S.rabbitTimer){clearInterval(S.rabbitTimer);S.rabbitTimer=null;}}
 function syncRabbitSubmit(){
   const running=rabbitMode()&&S.rabbitRun&&['queued','running','stopping'].includes(S.rabbitRun.status);
-  $('send-chat').textContent=running?'Run in progress':rabbitMode()?'Authorize & run':'Send';
-  $('send-chat').disabled=S.chatBusy||Boolean(running)||(!S.session?.ai_configured||(selectedCodex()&&S.codex.busy)||(rabbitMode()&&S.rabbitPolicy?.status!=='active'));
+  $('send-chat').textContent=running?'Send instruction':rabbitMode()?'Authorize & run':'Send';
+  $('send-chat').disabled=S.chatBusy||(running?S.rabbitRun.status==='stopping':(!S.session?.ai_configured||(selectedCodex()&&S.codex.busy)||(rabbitMode()&&S.rabbitPolicy?.status!=='active')));
+  $('rabbit-config').hidden=!rabbitMode()||Boolean(running);
+  $('chat-input').maxLength=running?4000:12000;
+  $('chat-input').placeholder=running?'Steer this task before its next action. Targets and budget stay fixed…':rabbitMode()?'Describe a specific objective for the authorized target…':'Describe your objective or ask about a tool…';
 }
 function renderRabbit(run){
   if(!run){$('rabbit-progress').hidden=true;document.querySelector('.copilot').classList.remove('rabbit-active');syncRabbitSubmit();return;}
@@ -457,17 +475,21 @@ function renderRabbit(run){
   document.querySelector('.copilot').classList.toggle('rabbit-active',['queued','running','stopping'].includes(run.status));
   $('rabbit-run-title').textContent='↪ '+(run.objective||'Rabbit Hole').slice(0,100);
   $('rabbit-run-status').textContent=prettyStatus(run.status);
-  $('rabbit-run-budget').textContent=`Target: ${run.target} · ${run.steps.length}/${run.max_steps} decisions · up to ${run.max_minutes} minutes · ${run.provider}/${run.model}`;
+  $('rabbit-run-budget').textContent=`Target: ${run.target} · ${run.execution_mode==='installed_cli'?'Installed CLI tools':'Selected workflows'} · ${run.decisions_used??run.steps.length}/${run.max_steps} decisions · up to ${run.max_minutes} minutes · ${run.provider}/${run.model}`;
   $('rabbit-run-summary').textContent=run.summary||'The model is evaluating the next authorized step…';
   $('rabbit-run-next').textContent=run.next_steps||'';
   $('rabbit-stop').hidden=!['queued','running','stopping'].includes(run.status);
   syncRabbitSubmit();
   const container=$('rabbit-steps-list');container.replaceChildren();
   for(const step of run.steps){
-    const el=text('div',`#${step.number} · ${step.profile} · ${prettyStatus(step.status)}${step.detail?' · '+step.detail:''}`,'rabbit-step');
+    const el=text('div',`#${step.number} · ${step.tool||step.profile} · ${prettyStatus(step.status)}${step.reason?' · '+step.reason:''}${step.detail?' · '+step.detail:''}`,'rabbit-step');
     if(step.job_id&&!step.job_deleted){const a=text('a','Inspect job →');a.href='#';a.onclick=async e=>{e.preventDefault();try{await refreshJobs();await selectJob(step.job_id);}catch(err){toast(err.message);}};el.append(a);}
     else if(step.job_deleted)el.append(text('span','Job and captured logs deleted','hint'));
     container.append(el);
+  }
+  const instructions=$('rabbit-instructions');instructions.replaceChildren();
+  for(const message of run.messages||[]){
+    instructions.append(text('p',`${message.applied_revision==null?'Received · pending next decision':'Applied'}: ${message.message}`));
   }
 }
 async function refreshRabbit(){
@@ -494,14 +516,23 @@ $('rabbit-stop').onclick=handle(async()=>{
 });
 updateRabbitMode();
 $('chat-form').onsubmit=async e=>{e.preventDefault();if(S.chatBusy)return;const value=$('chat-input').value.trim(),eid=S.eng;if(!value)return;
-  if(rabbitMode() && !S.session.ai_configured)return toast('Configure an AI model before Rabbit Hole mode.');
+  const running=rabbitMode()&&S.rabbitRun&&['queued','running'].includes(S.rabbitRun.status);
+  if(rabbitMode() && !running && !S.session.ai_configured)return toast('Configure an AI model before Rabbit Hole mode.');
   S.chatBusy=true;$('send-chat').disabled=true;$('send-chat').textContent=rabbitMode()?'Starting…':'Working…';
   try{
     if(rabbitMode()){
-      const profiles=[...document.querySelectorAll('input[name="rabbit-profile"]:checked')].map(x=>x.value);
+      if(running){
+        const runId=S.rabbitRun.id;
+        const updated=await api('/api/rabbit-runs/'+runId+'/messages','POST',{message:value});
+        if(eid===S.eng&&S.rabbitRun?.id===runId){$('chat-input').value='';renderRabbit(updated);}
+        toast('Instruction received. It will apply before the next action.');
+        return;
+      }
+      const execution_mode=$('rabbit-execution-mode').value;
+      const profiles=execution_mode==='installed_cli'?[]:[...document.querySelectorAll('input[name="rabbit-profile"]:checked')].map(x=>x.value);
       if(S.rabbitPolicy?.status!=='active')throw new Error('A trusted administrator policy is required before Rabbit Hole can run.');
-      if(!profiles.length)throw new Error('Select at least one installed, administrator-enabled workflow.');
-      const payload={engagement_id:eid,objective:value,target:$('rabbit-target').value.trim(),profiles,
+      if(execution_mode==='workflows'&&!profiles.length)throw new Error('Select at least one installed, administrator-enabled workflow.');
+      const payload={engagement_id:eid,objective:value,target:$('rabbit-target').value.trim(),profiles,execution_mode,
         max_steps:Number($('rabbit-steps').value),max_minutes:Number($('rabbit-minutes').value),authorized:$('rabbit-authorized').checked};
       if(!payload.authorized)throw new Error('Approve the one-time engagement authorization before starting.');
       const started=await api('/api/rabbit-runs','POST',payload);

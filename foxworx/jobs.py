@@ -190,6 +190,8 @@ class JobManager:
                 raise HTTPException(409, 'Proposal expired. Prepare a fresh proposal to recheck the command.')
             if not hmac.compare_digest(digest, p['digest']):
                 raise HTTPException(409, 'Proposal changed. Reopen the preview before approving.')
+            if p.get('run_id'):
+                self._check_delegation(owner,p)
             if p.get('adapter_id'):
                 from .adapters import AdapterPolicy
                 current=AdapterPolicy(self.cfg.adapter_policy_path).current()
@@ -222,10 +224,46 @@ class JobManager:
                    'interface_name':p.get('interface_name',''),
                    'status':'queued', 'returncode':None, 'started':None, 'ended':None,
                    'output_bytes':0, 'error':'', 'timeout':self.cfg.job_timeout}
+            if p.get('run_id'):
+                job.update(run_id=p['run_id'],run_instruction_revision=p['run_instruction_revision'])
             self.store.put('job', owner, job)
             self.store.event(owner, 'job-approved', id)
             self.tasks[id] = asyncio.create_task(self._worker(owner, job))
             return job
+
+    def delegate(self,owner: str,proposal: dict,run_id: str,instruction_revision: int) -> dict:
+        """Bind a prepared proposal to an existing explicit run authorization."""
+        proposal.update(run_id=run_id,run_instruction_revision=instruction_revision)
+        self._check_delegation(owner,proposal)
+        if proposal['profile']=='advanced':proposal['scope_check']='operator-run-grant'
+        proposal['digest']=hashlib.sha256(json.dumps({k:v for k,v in proposal.items() if k!='digest'},sort_keys=True).encode()).hexdigest()
+        return self.store.put('proposal',owner,proposal)
+
+    def _check_delegation(self,owner: str,proposal: dict):
+        from .adapters import AdapterPolicy
+        grant=self.store.get('rabbit',proposal['run_id'],owner)
+        if not grant or grant['status'] not in ('queued','running'):
+            raise HTTPException(409,'Rabbit Hole run authorization is no longer active')
+        policy=AdapterPolicy(self.cfg.adapter_policy_path).current()
+        if policy['status']!='active' or policy['revision']!=grant['policy_revision']:
+            raise HTTPException(409,'Administrator run policy changed or was revoked')
+        if grant.get('instruction_revision',0)!=proposal['run_instruction_revision']:
+            raise HTTPException(409,'Operator instructions changed; replan the command')
+        if time.time()>=grant['budget_end'] or grant.get('decisions_used',0)>grant['max_steps']:
+            raise HTTPException(409,'Run authorization budget expired')
+        if grant['max_steps']>policy['max_steps'] or grant['max_minutes']>policy['max_minutes']:
+            raise HTTPException(409,'Run budget exceeds administrator policy')
+        eng=self.engagement(owner,grant['engagement_id'])
+        if (proposal['engagement_id']!=grant['engagement_id']
+                or (proposal['profile']=='advanced' and proposal['target']!=grant['target'])
+                or scope_stamp(eng)!=grant['authorization_stamp']):
+            raise HTTPException(409,'Engagement authorization changed')
+        if not allowed(grant['target'],eng['include'],eng.get('exclude',[])):
+            raise HTTPException(403,'Run target is outside the saved engagement scope')
+        if grant.get('execution_mode','workflows')=='installed_cli':
+            if not policy.get('allow_installed_cli',False):raise HTTPException(403,'Installed CLI autonomy is disabled')
+        elif proposal['profile'] not in grant['profiles']:
+            raise HTTPException(403,'Tool is outside the run workflow authorization')
 
     async def _terminate(self, proc):
         try:
@@ -254,6 +292,14 @@ class JobManager:
             if id in self.reasons:
                 job['status'] = self.reasons[id]
                 return
+            # Approval and actual process creation are separate scheduling points.
+            if job.get('run_id'):
+                proposal=self.store.get('proposal',job['proposal_id'],owner)
+                if not proposal:raise HTTPException(409,'Delegated proposal disappeared')
+                self._check_delegation(owner,proposal)
+                item=self.registry.resolve(proposal['tool'])
+                if self.registry.fingerprint(item['path'])!=proposal['fingerprint']:
+                    raise HTTPException(409,'Executable changed before autonomous launch')
             proc = await asyncio.create_subprocess_exec(*job['argv'], cwd=self.store.workspace(job['engagement_id']),
                         env=child_environment(self.cfg), stdin=asyncio.subprocess.DEVNULL,
                         stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, start_new_session=True)

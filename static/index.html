@@ -195,11 +195,13 @@
    <div id="chat-context" class="chat-context"><label for="ai-job" class="hint">Optional job context</label><select id="ai-job"><option value="">No job selected</option></select><label class="check"><input id="share-output" type="checkbox"> Share this job’s command and last 12 KB of output</label><p class="hint">Off by default. Redaction is best-effort; inspect sensitive output first.</p></div>
    <section id="rabbit-config" class="rabbit-config" hidden aria-label="Rabbit Hole authorization">
      <div class="rabbit-title"><strong>↪ Rabbit Hole mode</strong><span class="rabbit-badge">One-time scope grant</span></div>
-     <p class="hint">The model may run multiple administrator-approved Kali adapters <strong>without prompting you for each command</strong>. It can use administrator-registered typed command templates, but not arbitrary shell commands, unapproved flags, or new targets. High-risk tools stay review-only. Stop the run at any time.</p>
+     <p class="hint">Authorize the task once. Rabbit Hole discovers relevant tools, checks results and tries alternatives <strong>without prompting for each command</strong>. Choose selected workflows or, when enabled by the administrator, installed CLI tools. Stop at any time.</p>
+     <label for="rabbit-execution-mode">Tool selection</label><select id="rabbit-execution-mode"><option value="workflows">Selected administrator workflows</option><option value="installed_cli" disabled>Installed CLI tools · automatic selection</option></select>
+     <p id="rabbit-execution-note" class="hint">Selected workflows use administrator-reviewed command templates.</p>
      <label for="rabbit-target">Exact authorized target</label><input id="rabbit-target" required placeholder="127.0.0.1 or https://lab.example/" maxlength="2048">
      <fieldset class="rabbit-workflows"><legend>Administrator-enabled Kali adapters</legend>
        <p id="rabbit-policy-status" class="hint" role="status">Checking root-owned adapter policy…</p>
-       <label for="rabbit-adapter-search" class="hint">Filter registered tools and workflows</label><input id="rabbit-adapter-search" type="search" maxlength="70" placeholder="Search tool, risk, or capability…" aria-label="Filter Rabbit Hole tool adapters"><div id="rabbit-adapter-list" class="rabbit-adapter-list"></div><p class="hint">Review-only templates can generate an immutable command preview, but never enter an unattended Rabbit Hole run. Use Copilot to select administrator-declared parameters.</p>
+       <label for="rabbit-adapter-search" class="hint">Filter registered tools and workflows</label><input id="rabbit-adapter-search" type="search" maxlength="70" placeholder="Search tool, risk, or capability…" aria-label="Filter Rabbit Hole tool adapters"><div id="rabbit-adapter-list" class="rabbit-adapter-list"></div><p class="hint">Review-only templates require approval when used as adapters. Installed CLI mode separately permits direct execution of their underlying tools. Use Copilot to select administrator-declared template parameters.</p>
        <button id="rabbit-policy-refresh" type="button" class="tiny">↻ Refresh adapter permissions</button>
      </fieldset>
      <div class="rabbit-budgets"><label>Maximum decisions <input id="rabbit-steps" type="number" min="1" max="16" value="8"></label><label>Maximum minutes <input id="rabbit-minutes" type="number" min="1" max="30" value="15"></label></div>
@@ -209,10 +211,11 @@
    <section id="rabbit-progress" class="rabbit-progress" hidden aria-live="polite" aria-label="Rabbit Hole progress">
      <div class="rabbit-title"><strong id="rabbit-run-title">Rabbit Hole</strong><span id="rabbit-run-status" class="rabbit-badge">Ready</span></div>
      <p id="rabbit-run-budget" class="hint"></p><div id="rabbit-steps-list" class="rabbit-steps-list"></div>
+     <div id="rabbit-instructions" class="hint" aria-label="Supplemental operator instructions"></div>
      <p id="rabbit-run-summary" class="rabbit-conclusion"></p><p id="rabbit-run-next" class="hint"></p>
      <button id="rabbit-stop" type="button" class="danger-quiet" hidden>■ Stop Rabbit Hole</button>
    </section>
-   <form id="chat-form" class="chat-composer"><label for="chat-input" class="sr-only">Message to AI copilot</label><textarea id="chat-input" rows="3" placeholder="Describe your objective or ask about a tool…" maxlength="12000"></textarea><div class="composer-footer"><span class="hint">Ctrl+Enter to send</span><button id="send-chat" type="submit" class="primary">Send</button></div><p class="hint privacy-copy">Sending shares your message, engagement scope/notes and same-model chat history with the selected provider. Changing provider does not automatically forward previous chats. No terminal stream is shared automatically.</p></form>
+   <form id="chat-form" class="chat-composer"><label for="chat-input" class="sr-only">Message to AI copilot</label><textarea id="chat-input" rows="3" placeholder="Describe your objective or ask about a tool…" maxlength="12000"></textarea><div class="composer-footer"><span class="hint">Ctrl+Enter to send</span><button id="send-chat" type="submit" class="primary">Send</button></div><p class="hint privacy-copy">Sending shares your message, engagement scope/notes, matching local tool metadata and same-model chat history with the selected provider. Changing provider does not automatically forward previous chats. No terminal stream is shared automatically.</p></form>
   </aside>
  </div><footer class="app-footer"><span>FOXWORX WORKBENCH v3.3.0</span><span id="operator-label"></span><span>Human-approved commands · bounded Rabbit Hole automation</span></footer>
 </div>

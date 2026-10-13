@@ -63,3 +63,7 @@ journalctl --user -u foxworx-workbench -n 80 --no-pager
 ```
 
 If online docs are unavailable, keep online mode disabled and use cached local pages. If the model lacks function-calling support, manual Tool Intelligence browsing still works independently of the AI SDK.
+
+## Ranked discovery
+
+Agents also receive automatic shortlists and can refine paginated searches across the full installed inventory. This uses public local metadata, independently of private operator notes. See [Tool discovery](TOOL-DISCOVERY.md).

@@ -1,8 +1,8 @@
-"""Administrator-controlled, *fixed-purpose* Rabbit Hole tool adapters.
+"""Trusted administrator policy for workflows and installed-CLI autonomy.
 
-The policy cannot add commands or arguments: it only selects from reviewed
-built-in recipes. It must be installed by root under trusted directories.
-Absent or untrusted policy disables ALL unattended tool execution.
+Schema-1/2 policies authorize reviewed templates. Schema-3 may additionally
+permit installed noninteractive executables with agent-constructed arguments.
+Absent or untrusted policy disables unattended tool execution.
 """
 from __future__ import annotations
 import hashlib
@@ -32,14 +32,17 @@ def parse_document(raw: bytes) -> dict:
         data = json.loads(raw)
     except (ValueError, UnicodeError) as exc:
         raise PolicyError('Invalid policy JSON') from exc
-    if not isinstance(data,dict) or type(data.get('schema')) is not int or data['schema'] not in (1,2):
+    if not isinstance(data,dict) or type(data.get('schema')) is not int or data['schema'] not in (1,2,3):
         raise PolicyError('Unsupported adapter policy schema')
     expected={'schema','enabled_profiles','max_steps','max_minutes'}
-    if data['schema']==2: expected.add('registered_adapters')
+    if data['schema']>=2: expected.add('registered_adapters')
+    if data['schema']==3: expected.add('allow_installed_cli')
     if set(data)!=expected:
         raise PolicyError('Unexpected or missing policy fields')
     registered={}
-    if data['schema']==2:
+    cli=data.get('allow_installed_cli',False)
+    if type(cli) is not bool:raise PolicyError('allow_installed_cli must be a boolean')
+    if data['schema']>=2:
         entries=data['registered_adapters']
         if not isinstance(entries,list) or len(entries)>64:
             raise PolicyError('Maximum 64 administrator-registered tools')
@@ -52,16 +55,17 @@ def parse_document(raw: bytes) -> dict:
                 raise PolicyError('Duplicate registered adapter')
             registered[checked['id']]=checked
     enabled=data['enabled_profiles']
-    if not isinstance(enabled,list) or not enabled or len(enabled)>len(ADAPTERS)+len(registered) or any(type(x) is not str for x in enabled):
+    if not isinstance(enabled,list) or (not enabled and not cli) or len(enabled)>len(ADAPTERS)+len(registered) or any(type(x) is not str for x in enabled):
         raise PolicyError('Specify a nonempty list of approved profiles')
     if len(set(enabled)) != len(enabled) or any(x not in ADAPTERS and x not in registered for x in enabled):
         raise PolicyError('Unknown or duplicate adapter profile')
-    if type(data['max_steps']) is not int or not 1<=data['max_steps']<=16:
-        raise PolicyError('Maximum steps must be an integer from 1 to 16')
-    if type(data['max_minutes']) is not int or not 1<=data['max_minutes']<=30:
-        raise PolicyError('Maximum minutes must be an integer from 1 to 30')
+    steps_cap,minutes_cap=(10000,1440) if data['schema']==3 else (16,30)
+    if type(data['max_steps']) is not int or not 1<=data['max_steps']<=steps_cap:
+        raise PolicyError(f'Maximum steps must be an integer from 1 to {steps_cap}')
+    if type(data['max_minutes']) is not int or not 1<=data['max_minutes']<=minutes_cap:
+        raise PolicyError(f'Maximum minutes must be an integer from 1 to {minutes_cap}')
     return {'enabled_profiles':tuple(enabled),'max_steps':data['max_steps'],
-            'max_minutes':data['max_minutes'],'registered_adapters':registered}
+            'max_minutes':data['max_minutes'],'registered_adapters':registered,'allow_installed_cli':cli}
 
 
 class AdapterPolicy:
@@ -112,7 +116,7 @@ class AdapterPolicy:
     @staticmethod
     def _disabled(status: str) -> dict:
         return {'status':status,'revision':hashlib.sha256(('disabled:'+status).encode()).hexdigest(),
-                'enabled_profiles':(), 'max_steps':0, 'max_minutes':0, 'registered_adapters':{}}
+                'enabled_profiles':(), 'max_steps':0, 'max_minutes':0, 'registered_adapters':{},'allow_installed_cli':False}
 
     def inventory(self, registry) -> dict:
         state=self.current()
@@ -132,7 +136,7 @@ class AdapterPolicy:
                           'enabled':enabled,'installed':installed,
                           'available':enabled and installed and entry['mode']=='autonomous',
                           'review_available':enabled and installed and entry['mode']=='review'})
-        return {'status':state['status'],'revision':state['revision'],
+        return {'status':state['status'],'revision':state['revision'],'allow_installed_cli':state.get('allow_installed_cli',False),
                 'profiles':builtin+added,'max_steps':state['max_steps'],'max_minutes':state['max_minutes'],
                 'security_note':'Typed command templates are reviewed by an administrator. No shell expansion, but not OS isolation or network egress filtering. Full terminal remains separate and unrestricted.'}
 

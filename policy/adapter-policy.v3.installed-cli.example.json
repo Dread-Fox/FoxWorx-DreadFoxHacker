@@ -1,0 +1,8 @@
+{
+  "schema": 3,
+  "allow_installed_cli": true,
+  "enabled_profiles": ["tcp-connect", "http-headers", "http-status", "dns-a"],
+  "registered_adapters": [],
+  "max_steps": 256,
+  "max_minutes": 240
+}

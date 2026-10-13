@@ -81,7 +81,7 @@ else if(u.pathname.startsWith('/api/ai/keys/')&&method==='PUT'){aiProviders.find
 else if(u.pathname.startsWith('/api/ai/keys/')&&method==='DELETE'){aiProviders.find(p=>p.id===u.pathname.split('/').pop()).has_key=false;value={cleared:true};}
 else if(u.pathname==='/api/ai/models')value={models:u.searchParams.get('provider')==='codex'?['codex-fixture-model']:['qwen3:8b','llama3.1:8b']};
 else if(u.pathname==='/api/ai/test')value={connected:true,provider:aiSettings.selected.provider,model:aiSettings.selected.model,reply:'OK'};
-else if(u.pathname==='/api/adapter-policy')value={status:'active',revision:'test-policy',max_steps:16,max_minutes:30,profiles:[
+else if(u.pathname==='/api/adapter-policy')value={status:'active',revision:'test-policy',allow_installed_cli:true,max_steps:256,max_minutes:240,profiles:[
   {profile:'tcp-connect',tool:'nmap',label:'TCP inventory',hint:'One authorized host',enabled:true,installed:true,available:true},
   {profile:'http-headers',tool:'curl',label:'HTTP headers',hint:'One exact URL',enabled:true,installed:true,available:true},
   {profile:'dns-a',tool:'dig',label:'DNS A',hint:'One domain',enabled:true,installed:true,available:true},
@@ -103,6 +103,11 @@ else if(u.pathname==='/api/rabbit-runs'&&method==='POST'){
 }
 else if(u.pathname.startsWith('/api/rabbit-runs/')&&u.pathname.endsWith('/stop')){
   value={...rabbitRuns[0],status:'stopped',summary:'Operator canceled the run.',next_steps:'Review jobs.'};rabbitRuns[0]=value;
+}
+else if(u.pathname.startsWith('/api/rabbit-runs/')&&u.pathname.endsWith('/messages')&&method==='POST'){
+  value=rabbitRuns[0];value.messages=value.messages||[];
+  value.instruction_revision=(value.instruction_revision||0)+1;
+  value.messages.push({message:data.message,revision:value.instruction_revision,applied_revision:null});
 }
 else if(u.pathname.startsWith('/api/rabbit-runs/'))value=rabbitRuns.find(r=>r.id===u.pathname.split('/').pop())||{};
 else if(u.pathname==='/api/tool-intelligence'&&method==='GET'){
@@ -404,6 +409,22 @@ with sync_playwright() as p:
     page.screenshot(path=str(OUT/'ui-rabbit-desktop.png'),full_page=True)
     page.click('#rabbit-stop');page.wait_for_timeout(80)
     assert 'stopped' in page.locator('#rabbit-run-status').inner_text()
+    page.select_option('#rabbit-execution-mode','installed_cli')
+    assert page.locator('#rabbit-steps').input_value()=='64'
+    assert page.locator('#rabbit-minutes').input_value()=='60'
+    page.fill('#chat-input','Discover and inspect the local service')
+    page.check('#rabbit-authorized');page.click('#send-chat');page.wait_for_timeout(90)
+    assert page.locator('#send-chat').inner_text()=='Send instruction'
+    page.fill('#chat-input','Try another installed tool')
+    page.click('#send-chat');page.wait_for_timeout(90)
+    followups=page.evaluate("window.__calls.filter(c=>c.path?.endsWith('/messages'))")
+    assert json.loads(followups[-1]['body'])['message']=='Try another installed tool'
+    assert 'Received' in page.locator('#rabbit-instructions').inner_text()
+    page.screenshot(path=str(OUT/'ui-autonomous-cli-desktop.png'),full_page=True)
+    starts=page.evaluate("window.__calls.filter(c=>c.path==='/api/rabbit-runs' && c.method==='POST')")
+    assert json.loads(starts[-1]['body'])['execution_mode']=='installed_cli' and json.loads(starts[-1]['body'])['profiles']==[]
+    page.click('#rabbit-stop');page.wait_for_timeout(80)
+    page.select_option('#rabbit-execution-mode','workflows')
     page.select_option('#ai-mode','copilot')
     assert not page.locator('#rabbit-config').is_visible()
     assert page.locator('#chat-context').is_visible()
@@ -532,6 +553,17 @@ with sync_playwright() as p:
     assert page.locator('#rabbit-config').is_visible()
     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'), 'Mobile Rabbit Hole has horizontal overflow'
     page.screenshot(path=str(OUT/'ui-rabbit-mobile.png'),full_page=True)
+    page.select_option('#rabbit-execution-mode','installed_cli')
+    page.fill('#rabbit-target','127.0.0.1')
+    page.fill('#chat-input','Inspect the authorized local service')
+    page.check('#rabbit-authorized');page.click('#send-chat');page.wait_for_timeout(90)
+    page.fill('#chat-input','Try an alternative HTTP tool')
+    page.click('#send-chat');page.wait_for_timeout(90)
+    assert 'Received' in page.locator('#rabbit-instructions').inner_text()
+    assert page.locator('#send-chat').is_enabled()
+    assert page.evaluate('document.documentElement.scrollWidth<=innerWidth+1')
+    page.screenshot(path=str(OUT/'ui-autonomous-cli-mobile.png'),full_page=True)
+    page.click('#rabbit-stop');page.wait_for_timeout(80)
     page.select_option('#ai-mode','copilot')
     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth'), 'Mobile has horizontal overflow'
     page.click('#ai-settings-open');page.wait_for_timeout(50)
@@ -563,7 +595,7 @@ with sync_playwright() as p:
     result={'mode':'Offline UI fixture smoke; NOT live browser-to-backend E2E','browser':b.version,'page_errors':errors,
         'checks':['actual HTML/CSS/JS initialize','vendored xterm renders','no horizontal overflow at 1600px and 390px',
                   'guided preview before approval','approval initially disabled','single explicit approval request',
-                  'job output display','finished/failed job deletion, confirmation cancellation, storage error recovery, deleted-job context reset, external deletion and mobile controls','AI output-sharing remains opt-in','light/dark themes','mobile toolbox','GUI tool has no misleading job launcher','per-operator cloud key and local model selection','local model discovery','connection test','AI settings preserve draft on key save','x86-64 multi-GPU node diagnostics (fixture)','pet opt-in hatch, care, rename and pause','pet isolated from tool approvals','offline companion chat','AI pet conversation opt-in','pet chat erasure and personality focus','pet responsive mobile/desktop','Workbench Pulse opt-in, preview, immediate deletion and narrow-screen controls','Rabbit Hole one-time authorization, no implicit job approval, visible cancellation and responsive layout','v2.8 registered auto/review adapters, searchable catalog, review-only command preview','v2.9 installed-tool intelligence docs and versioned notes; desktop/mobile layout and offline search fixture','v3.0 execution/investigation graph, retry links, inspector, annotations, zoom, filters and mobile layout','unified Codex provider, independent Tutor/Copilot/Rabbit modes, ChatGPT sign-in, shared chat/clear, model discovery, operation without LiteLLM, desktop/mobile UI','v3.2 read-only hardware inventory, protected network roles, mobile inventory and device selection','v3.3 Discord team findings, draft review, agent context and responsive team UI'],
+                  'job output display','finished/failed job deletion, confirmation cancellation, storage error recovery, deleted-job context reset, external deletion and mobile controls','AI output-sharing remains opt-in','light/dark themes','mobile toolbox','GUI tool has no misleading job launcher','per-operator cloud key and local model selection','local model discovery','connection test','AI settings preserve draft on key save','x86-64 multi-GPU node diagnostics (fixture)','pet opt-in hatch, care, rename and pause','pet isolated from tool approvals','offline companion chat','AI pet conversation opt-in','pet chat erasure and personality focus','pet responsive mobile/desktop','Workbench Pulse opt-in, preview, immediate deletion and narrow-screen controls','Rabbit Hole one-time authorization, installed-CLI selection, active-run supplemental instructions, no per-job approval request, visible cancellation and responsive layout','v2.8 registered auto/review adapters, searchable catalog, review-only command preview','v2.9 installed-tool intelligence docs and versioned notes; desktop/mobile layout and offline search fixture','v3.0 execution/investigation graph, retry links, inspector, annotations, zoom, filters and mobile layout','unified Codex provider, independent Tutor/Copilot/Rabbit modes, ChatGPT sign-in, shared chat/clear, model discovery, operation without LiteLLM, desktop/mobile UI','v3.2 read-only hardware inventory, protected network roles, mobile inventory and device selection','v3.3 Discord team findings, draft review, agent context and responsive team UI'],
         'status':'PASS','screenshots':'ui-*.png; all values and terminal output are fixtures'}
     (OUT/'browser-smoke.json').write_text(json.dumps(result,indent=2)+'\n')
     print(json.dumps(result,indent=2));b.close()

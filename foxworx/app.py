@@ -19,7 +19,8 @@ from .config import Settings, ROOT
 from .auth import Auth
 from .store import Store
 from .models import ToolNote, Login, Engagement, ProposalSpec, Approval, SessionSpec, ChatSpec, ArgumentText, AISelection, AIKeyChange, PetName, PetCare, PetTracking, PetChatMessage, PetChatMode, PetChatFocus, PetContextToggle, RabbitSpec, RegisteredProposalSpec
-from .registry import Registry
+from .registry import Registry, ToolDiscovery
+from .models import RabbitMessage
 from .tool_intelligence import ToolIntelligence
 from .jobs import JobManager, ACTIVE, PROFILES
 from .terminal import TerminalManager
@@ -76,11 +77,12 @@ def create_app(cfg: Settings | None = None, *, _allow_root_for_tests: bool = Fal
     auth, store, registry = Auth(cfg), Store(cfg.state), Registry(cfg)
     jobs, terminals = JobManager(cfg, store, registry), TerminalManager(cfg, store)
     knowledge = ToolIntelligence(cfg,registry)
+    discovery = ToolDiscovery(registry,cfg.state)
     codex = CodexAgent(cfg,store,jobs)
     providers = ProviderManager(cfg,store,codex=codex)
-    ai = Copilot(cfg, store, registry, jobs, providers=providers, knowledge=knowledge,
+    ai = Copilot(cfg, store, registry, jobs, providers=providers, knowledge=knowledge,discovery=discovery,
                  gateway=ModelGateway(codex=codex))
-    rabbit = RabbitRunner(cfg,store,jobs,providers,ai.gateway,knowledge=knowledge)
+    rabbit = RabbitRunner(cfg,store,jobs,providers,ai.gateway,knowledge=knowledge,discovery=discovery)
     hardware = HardwareIntelligence(store)
     jobs.hardware = hardware
     graph = InvestigationGraph(store,cfg.state)
@@ -114,6 +116,8 @@ def create_app(cfg: Settings | None = None, *, _allow_root_for_tests: bool = Fal
     @asynccontextmanager
     async def lifespan(app):
         await asyncio.to_thread(registry.scan)
+        await asyncio.to_thread(discovery.rebuild)
+        discovery.request_refresh(enrich_only=True)
         jobs.recover()
         rabbit.recover()
         await discord.start()
@@ -125,6 +129,7 @@ def create_app(cfg: Settings | None = None, *, _allow_root_for_tests: bool = Fal
         await codex.shutdown()
         await jobs.shutdown()
         await terminals.shutdown()
+        await asyncio.to_thread(discovery.close)
         if pet is not None: await pet.stop()
 
     app = FastAPI(title='FOXWORX Workbench', version=__version__, docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
@@ -133,6 +138,7 @@ def create_app(cfg: Settings | None = None, *, _allow_root_for_tests: bool = Fal
     app.state.hardware = hardware
     app.state.providers = providers
     app.state.knowledge = knowledge
+    app.state.discovery = discovery
     app.state.rabbit = rabbit
     app.state.graph = graph
     app.state.codex = codex
@@ -320,6 +326,10 @@ def create_app(cfg: Settings | None = None, *, _allow_root_for_tests: bool = Fal
     async def rabbit_cancel(id: str, request: Request):
         return await rabbit.stop(await actor(request,True),id)
 
+    @app.post('/api/rabbit-runs/{id}/messages')
+    async def rabbit_message(id: str,spec: RabbitMessage,request: Request):
+        return rabbit.add_message(await actor(request,True),id,spec.message)
+
     # Provider sign-in remains first-party managed. Legacy history endpoints
     # preserve old records without forwarding them into shared chat context.
     @app.get('/api/codex/status')
@@ -503,6 +513,8 @@ def create_app(cfg: Settings | None = None, *, _allow_root_for_tests: bool = Fal
     async def refresh_tools(request: Request):
         await actor(request,True)
         await asyncio.to_thread(registry.scan)
+        await asyncio.to_thread(discovery.rebuild)
+        discovery.request_refresh(enrich_only=True)
         return {'tools':registry.list(), 'profiles':PROFILES, 'scanned_at':registry.scanned}
 
     # Read-only CLI intelligence. Never interpret documentation as execution policy.

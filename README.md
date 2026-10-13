@@ -1,178 +1,169 @@
-# FOXWORX v3.3.3 — Local service on port 8765
+# FOXWORX Kali Workbench · v3.3.3
 
-**This release installs and runs as a systemd user service on `http://127.0.0.1:8765` without configuring Cloudflare.** Optional HTTPS tunnel hostnames can be added without changing local mode or requiring Cloudflare credentials inside FOXWORX. An existing v3.3 configuration is backed up and migrated to local-only mode while preserving secrets, Codex, Discord settings and engagement data.
+FOXWORX DreadFoxHacker is a browser-based workbench for **authorized FoxWorx operators**. It brings a Linux terminal, local tool discovery, managed jobs, evidence, and optional AI assistance into one workspace for authorized security assessments and lab work.
 
-**Token-free local and tunnel access:** The service runs on `127.0.0.1:8765` and opens the full workspace directly, with no setup token or Cloudflare-specific login. Any tunnel hostname you configure independently can forward to it without an application hostname allowlist. **Anyone who can reach the service can access its Kali shell as the service account.** [Setup and exposure details](docs/LOCAL-SERVICE.md).
+Run the service on a compatible Linux machine and open it locally or through an independently configured remote connection. Raspberry Pi and Z790 systems are examples, not required hardware.
 
-**Pi quick start (download the release directly to the Pi):**
+**License:** © 2026 FoxWorx LLC. This is proprietary software. Employees and contractors may use it within their express FoxWorx LLC authorization; other use requires permission under the [LICENSE](LICENSE). A public GitHub repository does not grant a public license. Third-party components retain their own licenses.
+
+> **Access model:** The default installation listens on `http://127.0.0.1:8765` with no application login. Anyone who can reach the service can use its terminal and access its data as the service's Linux account. Use a trusted local environment and control access to any remote route. See [local service and remote access](docs/LOCAL-SERVICE.md).
+
+## Supported platforms
+
+The application checks the operating system and CPU architecture, not a particular motherboard or computer model.
+
+| Requirement | Supported configuration |
+|---|---|
+| Intended operating system | Kali Linux, 64-bit |
+| Intel / AMD hosts | `x86_64` / `amd64`: desktops, laptops, mini PCs, workstations, servers, or Linux virtual machines |
+| ARM hosts | `aarch64` / `arm64`: Raspberry Pi and other 64-bit ARM Linux systems with compatible dependencies |
+| Python | 3.11 or newer, with virtual-environment support |
+| Service account | Dedicated non-root Linux account with a writable home directory and an active systemd user session |
+| GPU | Optional; the terminal, toolbox, jobs, and evidence features do not require one |
+| Browser access | A modern browser on the host or another device, including a phone or tablet |
+
+Other Linux distributions pass the platform check on these architectures, but package names, dependencies, and assessment tools need separate verification. Acceptance by the platform check does not mean every device or distribution has been tested. Native Windows, macOS, 32-bit ARM, and 32-bit x86 service hosts are unsupported; Windows and macOS devices can still access a Linux-hosted instance through a browser.
+
+Available tools depend on the host's installed packages, permissions, drivers, and connected hardware. FOXWORX does not require a Z790 motherboard, NVIDIA GPU, Cloudflare account, or cloud AI subscription. See the [platform and optional GPU guide](docs/PLATFORMS.md).
+
+## What operators can do
+
+| Workspace | Capabilities |
+|---|---|
+| Terminal | Use a native Linux shell with reconnect, resize, bounded output replay, and multiple sessions. Sessions remain active when the browser disconnects while the service is running. |
+| Toolbox | Discover installed executables, search tool descriptions, inspect prerequisites, and distinguish command-line, interactive, and desktop tools. |
+| Managed jobs | Review command proposals, approve execution, follow live output, inspect exit status, and stop jobs. Jobs have output, timeout, and concurrency limits. |
+| Engagements and evidence | Organize assessment scope, authorization notes, jobs, and uploaded files; export evidence with a checksum manifest. |
+| AI assistance | Choose Tutor, Copilot, or Rabbit Hole, with a separately selected provider and model. Terminal and toolbox operation do not depend on AI. |
+| Investigation Graph | Explore recorded tool execution, retries, evidence, and output observations; annotate and export the graph. Parsed observations are not independently verified findings. |
+| Tool Intelligence | Read local tool references, cache version-specific documentation, and save operator notes. Online retrieval requires administrator enablement. |
+| Hardware Intelligence | Inspect Linux-visible CPU, RAM, network, PCI/USB, graphics, and accelerator information; review network-interface roles. Detection does not guarantee a device's assessment capabilities. |
+| Discord Team Intelligence | Optionally share approved findings and receive engagement-tagged team context through one configured Discord channel. Messages do not authorize command execution. |
+| DreadFox companion | Use an optional evolving digital companion with offline dialogue, opt-in AI conversation, and opt-in summaries of limited activity categories. The companion has no tool-execution privileges. |
+
+Tool discovery does not install tools, and desktop-only tools are not rendered as a remote desktop. Hardware detection and documentation do not grant additional Linux permissions.
+
+## Install on a Linux host
+
+Use these steps as an authorized operator signed in to a dedicated **non-root** account. Keep an administrator or console recovery path available. The installer requires Internet access to download Python dependencies.
+
+### 1. Obtain the application
+
+Clone the repository into the operator's home directory:
 
 ```bash
 cd ~
-tar -xzf ~/Downloads/FoxWorx-DreadFoxHacker-v3.3.3.tar.gz
-cd FoxWorx-DreadFoxHacker-v3.3.3
+git clone https://github.com/Dread-Fox/FoxWorx-DreadFoxHacker.git
+cd FoxWorx-DreadFoxHacker
+```
+
+Alternatively, extract an authorized release archive and open its application directory. Use a directory path without spaces, quotes, percent signs, or backslashes. The installed service uses this path; rerun installation if it changes.
+
+### 2. Check compatibility and install
+
+```bash
 bash scripts/install.sh --preflight
 bash scripts/install.sh
+bash scripts/doctor.sh
 ```
 
-Open **http://127.0.0.1:8765** in the Pi's browser. An old running FOXWORX user service must be stopped deliberately before installation. **No tunnel or Cloudflare account is required.** [Local installation and optional reverse proxy guide](docs/LOCAL-SERVICE.md) · [Full installation guide](docs/INSTALL.md).
+The preflight reports host compatibility without changing files, packages, or services. The installer creates a Python virtual environment, installs application dependencies, and registers the `foxworx-workbench` systemd user service. It requests sudo only when the minimal OS dependencies need installation. It does not install the Kali tool collection, NVIDIA drivers, a model server, or Cloudflare.
 
----
+Useful installation options:
 
-> **New in v3.2 — Hardware Intelligence:** A dedicated Hardware workspace inventories the Linux-visible CPU, RAM, network adapters, PCI/USB devices, graphics render nodes, optional NVIDIA GPU metrics, kernel accelerators and probable NPU candidates. Wireless PHYs report advertised monitor-mode support where available; packet-injection readiness remains unverified. Trusted operators can label interfaces Management/Assessment/Reserved, with default-route protection. An explicit, reviewed assessment interface may be selected for certain guided Curl jobs. Copilot and Rabbit Hole receive **read-only hardware awareness**, never new device permissions. See [Hardware Intelligence and device roles](docs/HARDWARE-INTELLIGENCE.md).
-
-> **New in v3.1 — Codex provider + ChatGPT sign-in:** FOXWORX now embeds the official Codex app-server as a selectable provider for Tutor, Copilot and Rabbit Hole. Operators can sign in to Codex using its supported device-code workflow and eligible ChatGPT accounts, without handing passwords, cookies or tokens to the FOXWORX browser. Codex credentials are stored by the first-party CLI in a per-operator CODEX_HOME. Codex turns run in read-only mode with application approval requests denied; this is not equivalent to an OS security sandbox for data isolation. Read [Codex setup and limits](docs/CODEX-AGENT.md). **GitHub visibility and open-source dependencies do not turn the FoxWorx LLC company-only license into an open-source license.**
-
-> **PROPRIETARY SOFTWARE — © 2026 FoxWorx LLC. All rights reserved.**  
-> Public viewing does **not** grant permission to install, run, copy, modify, distribute, or commercialize this software outside FoxWorx LLC authorization. See [LICENSE](LICENSE). Third-party components retain their own licenses.
-
-> **New in v3.0 — Investigation Graph:** Live execution and observation graph backed by persistent managed-job and Rabbit Hole records. Visualize tool use, retries, saved job evidence, parsed-but-unverified output observations, and approved target associations. Includes an offline zoomable SVG canvas, filters, annotations, and JSON/SVG/PNG exports. Read [Investigation Graph](docs/INVESTIGATION-GRAPH.md). **No new automated tool permissions or background AI calls.**
-
-> **New in v2.9 — Tool Intelligence:** Python-managed, host-specific CLI discovery and version-bound documentation cache. Operators can inspect local man/package references, discover likely flags, save private verified notes, and optionally retrieve official Kali docs or filtered external search references. Tutor, Copilot and Rabbit Hole can read the same cache, but **documentation NEVER expands execution authority**. Online retrieval is OFF until administrators explicitly enable it. See [Tool Intelligence guide](docs/TOOL-INTELLIGENCE.md).
-
-> **v2.8 CLI adapter expansion:** 17 built-in Rabbit Hole workflows, 19 sample administrator-registered CLI templates (some autonomous, others review-only), model-selectable *typed* parameters, separate review-only tools, and a searchable adapter panel. Existing root-owned schema-1 policies remain valid without expanding privileges. See [docs/CLI-ADAPTERS.md](docs/CLI-ADAPTERS.md) and `policy/adapter-policy.v2.example.json`. The system does not run unrestricted model-generated shell commands.
-
-# FOXWORX Kali Workbench · v3.3.3
-
-> **New in v3.3 — Discord Team Intelligence:** Optional bot integration for one Discord team channel, engagement-tagged inbound findings, read-only AI team context across independently operated machines, human-approved manual/Copilot/Rabbit Hole findings, and persistent local message/draft history. No channel message authorizes tool execution. See [setup and user guide](docs/DISCORD-TEAM.md).
-
-A browser workspace for Kali Linux **ARM64 Raspberry Pi 4B or x86-64 workstations**: **real persistent terminal + discovered tool inventory + live job output + evidence + a normally approval-driven AI copilot and separately preauthorized Rabbit Hole mode**. Local browser access is the default. The operator can independently provide optional external access later.
-
-**Release classification: tested development distribution for trusted operators, not an independently audited unattended pentest system.** This is an actual application, not a mockup or renamed v0.1. It has not been deployed on your Pi or Z790, verified against your Cloudflare account, or independently security-audited. Read the acceptance checklist before publishing it.
-
-## Previously in v2.7 — Administrator-Controlled Tool Adapters
-
-The v2.7 Rabbit Hole extension expands fixed-purpose Kali workflows from **9 to 17** using Nmap, Curl, Dig, WHOIS, OpenSSL and WhatWeb. A **root-owned administrator policy** in `/etc/foxworx/adapter-policy.json` determines which adapters and budgets are permitted; the operator independently chooses a narrower grant for each run. The policy cannot add arbitrary commands or arguments, and revocation stops in-flight autonomous runs. The browser shows enabled, disabled, and uninstalled adapters. **Rabbit Hole is disabled until this policy is explicitly installed**; manual sessions continue to work.
-
-[Administrator tool policy and installation guide](docs/ADAPTER-POLICY.md) · [Policy example](policy/adapter-policy.example.json)
-
-## Previously introduced in v2.6 — Rabbit Hole: bounded autonomous guided investigation
-
-**Select `Rabbit Hole` in the AI copilot** to authorize a single objective, exact scoped target, chosen guided workflows and finite run budget **once**, then let the selected cloud/local model iterate and retry the allowed Kali checks without approving every command. Failed tool output and exit status feed the next step. Progress, job links, stop, audit, a final summary and suggested next steps are included. The regular Copilot/Tutor approval behavior and DreadFox privacy boundary remain unchanged.
-
-The v2.6 release introduced **nine typed, low-impact guided recipes** across Nmap/Curl/Dig/WHOIS—not arbitrary terminal commands or exploit tools. Limits: **1–16 agent decisions**, **1–30 minutes**, only one run per operator and two per node. The model cannot change target, allowed workflows, arguments or authorization. All jobs pass through the existing managed execution checks. **This is not an egress firewall or verified task solver; Rabbit Hole requires a suitably isolated and explicitly authorized assessment environment.**
-
-Read [Rabbit Hole operator guide and safety limitations](docs/RABBIT-HOLE.md) before enabling it.
-
-## New in v2.5 — Workbench Pulse: safe operations context for DreadFox
-
-Operators can now **separately opt in** to DreadFox's seven-day **Workbench Pulse**. The fox can recognize approximate activity in **terminal sessions, reviewed managed jobs, successful or unfinished managed jobs, copilot learning, workspace planning and evidence organization**. It does not know the target, executable, command, path, result, findings or credentials behind those events. Stored records are limited to UTC day, fixed category and saturated count; conversations receive only an approximate frequency band. Raw `audit.details` is never read by the companion.
-
-- **Off by default; no backfill.** Opt-in is in the DreadFox sanctuary. Disabling immediately deletes all stored pulse rows. The regular pet growth journal and XP are separate. Pausing pet tracking also suppresses the pulse.
-- **AI privacy:** DreadFox receives the pulse only when enabled; it is passed to the chosen external/cloud/local model **only after the operator also opts into AI dialogue and sends a chat message**. An explicit disclosure is shown. It never triggers background model calls.
-- **Conversation privacy:** Changing the Pulse setting rotates its conversation-context partition, so prior pet chats are not forwarded to the model automatically after revoking Pulse access. Existing chat messages remain stored until separately cleared.
-- **Retention:** Rows older than seven UTC calendar days are pruned when processed/read; no details are stored at any stage. No existing operations are imported on opt-in.
-
-See [DreadFox companion and Pulse privacy guide](docs/DREADFOX.md). All v2.4 features and the same shared v2 state directory are retained.
-
-## Previously in v2.4 — DreadFox conversations and evolving character
-
-DreadFox now includes **Whispers with your fox**, a separate companion conversation panel below the existing animated SVG fox. Its personality is shaped by safe activity affinity totals (Exploration, Craft, Wisdom, Stewardship), age, energy, bond, curiosity and earned growth. A user can also explicitly set a favorite memory theme. The deterministic field journal and 1–9 tails remain intact.
-
-- **Offline conversation is the default:** the fox responds from its own pet state with no GPU, API key, network request or charge.
-- **AI-powered conversation is opt-in:** use the operator's currently selected cloud/local model by enabling the checkbox in the sanctuary. Only the explicitly typed pet message, a safe bounded pet-state summary and at most 12 previous messages from that **same provider + model + approved inference server + credential** are sent. There is no automatic background inference.
-- **No Kali privileges:** no tools or function schemas are offered to DreadFox; it cannot execute commands, read targets or output, approve jobs, or access main copilot messages. A model returning a tool request is rejected.
-- **Memory control:** short-term conversation records are stored separately in SQLite (maximum 60 rows per operator). Clear pet chat without losing XP; a full pet delete/reset removes conversations and memories. Pet chat itself earns no XP. Model chat text is **not encrypted** in the SQLite database. Never paste confidential data into it.
-
-Model connections are best-effort: provider availability, compatibility, charges and local-server setup must be tested on your hardware. [See the DreadFox guide](docs/DREADFOX.md).
-
-## From v2.3 — DreadFox digital companion
-
-The optional sanctuary retains its original procedural SVG illustration, breathing/tail animation, nine age- and XP-gated growth stages, 120 XP/day limit, activity affinities, moods, interactive care, keepsakes and private milestone journal. The passive activity observer uses **only predefined audit event categories**—never command text, targets, results, secrets or regular AI conversations. Operators may pause activity tracking independently of conversation mode.
-
-## Previously in v2.2 — one service for Pi and Z790
-
-- **Native ARM64 and x86-64 Kali support:** a read-only host preflight and architecture-aware installation (no ARM64-only assumption on a conventional PC).
-- **Node diagnostics:** safe reporting of host architecture, logical CPUs, distro, 0–16 NVIDIA devices, available VRAM, driver discovery status and presence of Ollama. Missing GPU utilities are nonfatal.
-- **New-install profiles:** Pi defaults to 2 jobs/4 terminals; workstation to 4 jobs/8 terminals. Upgrades **retain existing limits**. Both profiles preserve all authorizations and backend functionality.
-- **Optional local GPU inference:** run Ollama/LM Studio/vLLM separately on your Z790; use `ollama-local` on the same host, or a private SSH forward to connect the Pi. FOXWORX never installs NVIDIA drivers or publishes the inference API.
-- **Optional per-node Cloudflare access:** same codebase, separate Access-protected hostnames and services; there is no cross-node management plane yet.
-
-Start with [**Platform and multi-GPU setup**](docs/PLATFORMS.md) for both hosts.
-
-## From v2.1 — user-selectable cloud and local AI
-
-**Provider selection is now part of the browser workbench**: OpenAI, Anthropic Claude, Google Gemini, xAI Grok, DeepSeek, Mistral, Ollama, LM Studio, vLLM and administrator-approved OpenAI-compatible servers. Each operator saves a model selection and optional encrypted credential; no API key appears in browser settings responses. Local-model endpoints are approved in the private Pi config and never entered as arbitrary browser URLs. Function-calling ability varies by model; Tutor mode is available for models without tool calls. **Nothing has autonomous approval privileges.**
-
-Install the LiteLLM runtime (default `bash scripts/install.sh`), then click **AI copilot → Provider & model**. See [AI providers, local GPU inference, credentials and migration](docs/AI-PROVIDERS.md).
-
-## What changed from v0.1
-
-| Area | v2 implementation |
+| Option | Purpose |
 |---|---|
-| Terminal | Native controlling PTY; browser disconnect detaches rather than killing the shell; bounded replay; reconnect; resize; session selection; close controls. No mandatory tmux dependency. |
-| Toolbox | 72 described tool entries **plus dynamic executable discovery**; search/categories; installed/missing states; CLI/interactive/desktop distinctions; package and prerequisite notes. |
-| Execution | Four guided recipes and a generic literal-argument launcher; immutable expiring proposals; explicit one-use human approval; saved stdout/stderr; actual exit status; stop/timeout/output/concurrency limits. |
-| Copilot | A provider-neutral LiteLLM adapter can discover installed tools and prepare proposals through supported model function calls. The model cannot approve or execute them. Tutor mode blocks proposal dispatch. |
-| Engagements | Separate workspaces; exact asset inputs, exclusions, authorization notes; guided input checking; stale proposals rejected after relevant scope/notes changes. |
-| Evidence | Persistent job/chat metadata, file upload/download, bounded ZIP export and SHA-256 manifest. Terminal input is not recorded. |
-| Usability | Dark/light modes, narrow-screen layout, clear connection/configuration status, visible errors, output follow/copy, optional AI context sharing, local setup wizard and diagnostics. |
-| Security | Non-root service; token-free default (no operator identity); browser Origin/CSRF checks; terminal connection tickets; no runtime CDN; no inherited provider secrets in command environments. Legacy authenticated modes remain optional but are not the installation default. |
+| `--without-ai` | Skip the optional LiteLLM dependencies for cloud and local model providers. |
+| `--skip-apt` | Skip OS package installation when the required dependencies are already available. |
+| `--no-start` | Prepare the installation without starting the service. |
 
-**72 descriptions does not mean 72 installed tools or 72 graphical adapters.** There are four guided forms. Other noninteractive tools use advanced arguments; interactive tools use the terminal. A remote desktop is not included.
+**Upgrades:** Save needed evidence and finish active work before stopping an existing service with `systemctl --user stop foxworx-workbench`. Stopping interrupts live terminals and jobs. The installer refuses to replace a running workbench and preserves existing state and credentials, but this release backs up and migrates authentication mode, port, and origin to the default token-free local configuration. Review the [installation and upgrade guide](docs/INSTALL.md) before updating an existing deployment, especially one using authenticated access.
 
-## Install on the Pi or Z790 (Kali Linux)
+### 3. Open the workbench
 
-Use **Kali ARM64 or x86-64 with Python 3.11+**, a dedicated non-root operator account, and a normal systemd user login. Do not install/run this as root. Keep an SSH or local-console recovery path.
+Open **http://127.0.0.1:8765** in a browser on the host. The default installation has no setup token or application sign-in screen. Signing in to an optional AI provider is a separate operation.
 
-Extract `FoxWorx-DreadFoxHacker-v3.3.0.zip` into your home directory, then:
+Check service status or logs when needed:
 
 ```bash
-cd ~/FoxWorx-DreadFoxHacker-v3.3
-bash scripts/install.sh --preflight  # read-only compatibility check
-# Only when the old v0.1 service is running on the same port:
-systemctl --user stop foxworx
-
-bash scripts/install.sh
+systemctl --user status foxworx-workbench --no-pager
+journalctl --user -u foxworx-workbench -n 80 --no-pager
 ```
 
-The installer requests sudo only to install minimal OS dependencies; it chooses Pi/workstation resource presets **only for new configurations**. By default it installs optional LiteLLM; use `--without-ai` for a terminal/toolbox-only setup. It does not install Kali's full tool collection, change sudo policy, or install Cloudflare. This token-free release backs up and changes only existing auth mode / port / origin settings; it preserves previous credentials and evidence without using any old login token. Python dependencies require Internet access on the Pi.
+See [installation](docs/INSTALL.md) for startup after logout or reboot, backups, and rollback.
 
-Visit **http://127.0.0.1:8765** in a browser on the host; there is no FOXWORX token or login screen. From your workstation, keep an SSH forward open:
+## First operator workflow
 
-```bash
-ssh -L 8765:127.0.0.1:8765 operator@YOUR_PI_ADDRESS
-```
+1. Open the default **Local lab** engagement, or create an engagement with the assessment's exact scope and authorization notes.
+2. Open a terminal and confirm basic operation with commands such as `pwd` and `uname -m`.
+3. Refresh the toolbox and inspect the tools actually installed on this host. Run a harmless check such as `curl --version` if Curl is available.
+4. For a managed job, review its proposed command and target, confirm authorization, and approve it. Check the recorded output and exit status in Jobs.
+5. Organize evidence in the engagement and export it when needed.
+6. If using AI, open **AI copilot → Provider & model**, configure the chosen provider, and try **Tutor** before enabling assessment workflows.
 
-Then open that loopback URL on your workstation. Tunnel setup is optional and independent of application installation.
+On a phone or tablet, swipe inside the terminal or use **Output history** to read earlier output. Tap **Latest output ↓** to return to the newest lines. Fullscreen terminal programs may not provide scrollback.
 
-Configure optional shared API credentials, inference endpoints, or reverse proxy settings locally:
+Read the [operator guide](docs/OPERATOR-GUIDE.md) for the full workflow.
+
+## AI modes and optional integrations
+
+**Tutor** provides explanations and read-oriented assistance. **Copilot** can prepare managed command proposals; execution requires an operator's explicit approval. **Rabbit Hole** can iterate through approved guided workflows after the operator grants a specific target, permitted workflows, and finite budget for one run. Rabbit Hole requires a separately installed administrator policy and remains disabled without it. It cannot expand its own grant or execute unrestricted model-generated shell commands.
+
+The provider selector supports cloud providers, Codex, and administrator-approved local inference servers. Model availability, credentials, costs, and tool-calling support depend on the selected provider. A successful connection check does not establish that every AI workflow is supported. Codex offers its own account sign-in flow; operators should not put account passwords, cookies, or access tokens into workbench chat.
+
+Local inference is a separate service, such as Ollama, LM Studio, or vLLM. FOXWORX does not install or manage its drivers, models, or GPU allocation. Provider credentials and approved local endpoints are configured through the browser settings and private host configuration. For host configuration changes:
 
 ```bash
 bash scripts/configure.sh
 systemctl --user restart foxworx-workbench
-bash scripts/doctor.sh
 ```
 
-**External access is your responsibility:** If you add a Cloudflare Tunnel, point it to `http://127.0.0.1:8765`; FOXWORX needs no further changes. This token-free service grants any reachable visitor the Linux service user’s shell access, so you can independently configure Cloudflare Access if desired. See [LOCAL-SERVICE.md](docs/LOCAL-SERVICE.md).
+Use the dedicated setup guides:
 
-## First workflow
+- [AI providers, credentials, and local inference](docs/AI-PROVIDERS.md)
+- [Codex provider setup and limits](docs/CODEX-AGENT.md)
+- [Rabbit Hole authorization and limits](docs/RABBIT-HOLE.md)
+- [Administrator tool policy](docs/ADAPTER-POLICY.md) and [CLI adapters](docs/CLI-ADAPTERS.md)
+- [Discord team setup and sharing](docs/DISCORD-TEAM.md)
+- [DreadFox companion and privacy controls](docs/DREADFOX.md)
 
-Choose **Tutor**, **Copilot**, or **Rabbit Hole** using the **Mode** selector. Select the provider and model separately using **Provider & model**. Codex appears alongside the other providers and uses **Sign in with ChatGPT** instead of an API key. Changing mode keeps your saved provider and model.
+## Remote access and team deployments
 
-Open a terminal in the default **Local lab** engagement. Confirm native commands such as `pwd` and `uname -m`. Select an installed tool to inspect prerequisites, prepare a harmless local command such as `curl --version`, inspect the immutable preview, check authorization and approve it. Verify its recorded exit code/output in Jobs. Export evidence.
+For access from another computer, an operator can use an SSH forward to the Linux host:
 
-**Terminal on a phone:** Swipe up or down inside the terminal, or drag the large **Output history** bar below it. Tap **Latest output ↓** to return to the newest lines. Reading older output keeps your place as new output arrives. Terminal buttons have larger touch targets on narrow screens; history controls are disabled when a fullscreen program has no scrollback.
+```bash
+ssh -N -L 127.0.0.1:8765:127.0.0.1:8765 operator@HOST_ADDRESS
+```
 
-For AI, open **Provider & model** in the browser, select any supported cloud/local provider, enter an actual available model ID, and save a provider credential when required. For Ollama, local model discovery is available. Try Tutor mode first; a successful connection check does not guarantee tool calling. The terminal and toolbox work without AI.
+Replace `operator` and `HOST_ADDRESS` with the host's SSH account and address, keep the connection open, and browse to `http://127.0.0.1:8765` on the client. The client port must be available.
 
-## Read before team use
+A separately managed HTTPS reverse proxy or tunnel can also forward to `http://127.0.0.1:8765` with WebSocket support. Cloudflare is optional. The application does not create a tunnel, register a domain, or enforce visitor identity in default open mode. HTTPS alone does not restrict who can operate the workbench; configure access controls on the remote route before making it reachable outside the trusted operator environment.
 
-A full shell is powerful: operators on one node share the service Linux account's authority. They can read that account's configuration, encrypted key material, encryption key and files. Encryption at rest **does not isolate hostile shell users**. Web ownership checks do **not** isolate hostile users. Prefer one operator/account/node trust boundary. No passwordless sudo is installed; the service explicitly blocks privilege escalation.
+**Operators sharing an instance share authority.** In default open mode, visitors use one shared local operator identity and the same Linux service account. They can access that account's files, configuration, evidence, and connected integrations. Credential encryption does not isolate operators who share its shell access. Use separate service accounts or hosts where separate trust boundaries are required.
 
-Guided scope checks validate inputs, **not actual network destinations**. Advanced arguments, native terminal commands, tool redirects/referrals and user code are not contained by an engagement firewall. Any Cloudflare ingress protection you choose does not control outbound testing traffic. Program rules and authorization remain the operator's responsibility.
+Install each host independently, with its own service, configuration, and data. Discord can provide optional team context, but FOXWORX does not provide centralized fleet management or automatic evidence synchronization. See [local and remote access](docs/LOCAL-SERVICE.md) and [security boundaries](docs/SECURITY.md).
+
+## Operational limits and verification
+
+This is a tested development distribution for trusted operators. It has not undergone an independent security audit, and the checks do not establish compatibility with every supported architecture, physical device, inference provider, or external integration.
+
+Guided scope checks validate inputs; they do not enforce actual network destinations. Terminal commands and some tools can reach beyond the stated scope. Assessments require operator authorization and appropriate host/network isolation. The service does not install passwordless sudo or grant extra privileges to make tools work.
+
+For verification details, consult the dated [release report](verification/TEST-REPORT.md) and the feature reports in [verification/](verification/). Hardware installation, reboot behavior, remote transport, and live provider or Discord connections need validation in each deployment.
 
 ## Documentation
 
-- [Installation, local port 8765, upgrade and optional proxy setup](docs/INSTALL.md)
-- [Universal AI providers and local inference](docs/AI-PROVIDERS.md)
-- [Codex provider, device sign-in, and deployment limits](docs/CODEX-AGENT.md)
-- [Operator guide and troubleshooting](docs/OPERATOR-GUIDE.md)
-- [Tool coverage and the complete 72-entry matrix](docs/TOOL-COVERAGE.md)
-- [Usability review: fixes, tradeoffs and remaining gaps](docs/UX-REVIEW.md)
-- [Security model and deployment checklist](docs/SECURITY.md)
+- [Installation, upgrades, and rollback](docs/INSTALL.md)
+- [Operator guide](docs/OPERATOR-GUIDE.md)
 - [Configuration reference](docs/CONFIGURATION.md)
-- [Architecture and extension points](docs/DEVELOPER.md)
-- [Dependency provenance and licenses](docs/DEPENDENCIES.md)
-- [Actual verification results and limits](verification/TEST-REPORT.md)
+- [Platform and optional GPU setup](docs/PLATFORMS.md)
+- [Security boundaries](docs/SECURITY.md)
+- [Tool coverage and prerequisites](docs/TOOL-COVERAGE.md)
+- [Tool Intelligence](docs/TOOL-INTELLIGENCE.md)
+- [Hardware Intelligence](docs/HARDWARE-INTELLIGENCE.md)
+- [Investigation Graph](docs/INVESTIGATION-GRAPH.md)
+- [Developer guide](docs/DEVELOPER.md)
+- [Dependency provenance and third-party licenses](docs/DEPENDENCIES.md)
+- [Release history](CHANGELOG.md)
 
-Original FOXWORX code is proprietary to FoxWorx LLC under the [company-only LICENSE](LICENSE); bundled third-party assets retain their own licenses and notices. This distribution does not bundle Kali tools, API credentials or Cloudflare tunnel tokens.
+Application source, tests, policies, installation scripts, and bundled frontend assets are included in this repository. Kali tools, provider credentials, model weights, and tunnel credentials are not bundled.
